@@ -3,7 +3,7 @@
 #include <QDebug>
 #include <QTime>
 
-void log(char *format, ...)
+void log(const char *format, ...)
 {
     QString msg;
 
@@ -15,14 +15,14 @@ void log(char *format, ...)
     log_internal(msg);
 }
 
-void mLog(char *module, char *format, ...)
+void mLog(const char *module, char *format, ...)
 {
     QString qFormat = QString("[%1] %2").arg(module).arg(format);
     QString msg;
 
     va_list args;
     va_start(args, format);
-    msg.vsprintf(format, args);
+    msg.vsprintf(qFormat.toUtf8().data(), args);
     va_end(args);
 
     log_internal(msg);
@@ -31,6 +31,6 @@ void mLog(char *module, char *format, ...)
 void log_internal(QString msg)
 {
     QDateTime now;
-    QString qFormat = QString("{%1} %2").arg(QTime::currentTime().toString("hh:mm:ss")).arg(msg);
+    QString qFormat = QString("%1 %2").arg(QTime::currentTime().toString("hh:mm:ss")).arg(msg);
     qDebug(qFormat.toUtf8().data());
 }
