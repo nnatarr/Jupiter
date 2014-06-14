@@ -24,6 +24,8 @@ private:
     friend class JUSchemeTree;
 };
 
+// =======================================================================
+
 class JUSchemeNode
 {
 public:
@@ -36,6 +38,8 @@ public:
 
     QString name() const { return m_name; }
     SchemeNodeType type() { return m_type; }
+
+    JUSchemePort* addPort(QString name, JUSchemePort::SchemePortType type);
 
 private:
     QString m_name;
@@ -50,6 +54,8 @@ private:
 
     friend class JUSchemeTree;
 };
+
+// =======================================================================
 
 class JUSchemeTree
 {

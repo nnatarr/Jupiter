@@ -40,6 +40,11 @@ bool JUSchemeTree::addLinkFromNodeToNode(JUSchemeNode *nodeFrom, JUSchemePort *p
         return false;
     }
 
+    if (portFrom->type() != JUSchemePort::SchemePortTypeOut) {
+        JUMLog("can not send signal from incoming port.");
+        return false;
+    }
+
     JUSchemeNode::Link link;
     link.portFrom = portFrom;
     link.nodeTo = nodeTo;
@@ -78,6 +83,17 @@ JUSchemeNode::~JUSchemeNode()
 
 // ========================================
 
+JUSchemePort* JUSchemeNode::addPort(QString name, JUSchemePort::SchemePortType type)
+{
+    if (name.isEmpty()) {
+        return NULL;
+    }
+
+    JUSchemePort *port = new JUSchemePort(name, type);
+    m_ports.append(port);
+
+    return port;
+}
 
 bool JUSchemeNode::addLinkToNode(JUSchemePort *portFrom, JUSchemeNode *nodeTo, JUSchemePort *portTo)
 {

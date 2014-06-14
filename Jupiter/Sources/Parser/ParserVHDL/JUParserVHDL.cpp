@@ -19,6 +19,5 @@ JUParserVHDL::~JUParserVHDL()
 JUSchemeTree* JUParserVHDL::parse()
 {
     JUMLog("parse.");
-
     return NULL;
 }
