@@ -13,4 +13,6 @@ extern inline void log_internal(QString msg);
 #define JUMLog(format, ...) mLog(__JUMODULE__, format, ##__VA_ARGS__)
 #define JULog(format, ...) log(format, ##__VA_ARGS__)
 
+#define Q(x) x.toUtf8().data()
+
 #endif

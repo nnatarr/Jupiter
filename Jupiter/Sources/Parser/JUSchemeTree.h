@@ -9,9 +9,16 @@ class JUSchemePort
 {
 public:
     enum SchemePortType { SchemePortTypeIn, SchemePortTypeOut };
+    enum SchemePortValueType { SchemePortValueTypeBit };
+    struct PortValueType {
+        SchemePortValueType valueType;
+    };
 
+    PortValueType valueType() { return m_value; }
     SchemePortType type() { return m_type; }
     QString name() const { return m_name; }
+
+    bool setValueType(PortValueType valueType);
 
 private:
     JUSchemePort(QString name, SchemePortType type);
@@ -19,6 +26,7 @@ private:
 
     QString m_name;
     SchemePortType m_type;
+    PortValueType m_value;
 
     friend class JUSchemeNode;
     friend class JUSchemeTree;
@@ -29,7 +37,7 @@ private:
 class JUSchemeNode
 {
 public:
-    enum SchemeNodeType { SchemeNodeTypeLUT, SchemeNodeTypeFPT };
+    enum SchemeNodeType { SchemeNodeTypeLUT, SchemeNodeTypeUBS };
     struct Link {
         JUSchemePort *portFrom;
         JUSchemeNode *nodeTo;

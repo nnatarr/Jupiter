@@ -124,3 +124,11 @@ JUSchemePort::~JUSchemePort()
 {
     JUMLog("port dtor {%p}.", this);
 }
+
+// ========================================
+
+bool JUSchemePort::setValueType(JUSchemePort::PortValueType valueType)
+{
+    m_value = valueType;
+    return true;
+}

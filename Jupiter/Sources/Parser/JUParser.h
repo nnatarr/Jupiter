@@ -7,7 +7,7 @@
 class JUParser
 {
 public:
-    virtual JUSchemeTree* parse() = 0;
+    virtual JUSchemeTree* parse(const QString& filePath) = 0;
 };
 
 #endif
