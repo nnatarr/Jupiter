@@ -26,14 +26,23 @@ JUEntity::~JUEntity()
 
 void JUEntity::addPort(const QString& name, const QString& mode, const QString& type)
 {
+    addPort(JUEntity::createPort(name, mode, type));
+}
+
+JUEntity::Port JUEntity::createPort(const QString& name, const QString& mode, const QString& type)
+{
     Port p;
     p.name = name;
     p.mode = mode;
     p.type = type;
+    return p;
+}
 
-    if (mode == "in") {
+void JUEntity::addPort(Port p)
+{
+    if (p.mode == "in") {
         m_portsIn.append(p);
-    } else if (mode == "out") {
+    } else if (p.mode == "out") {
         m_portsOut.append(p);
     }
 }

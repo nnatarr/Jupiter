@@ -20,10 +20,13 @@ public:
         friend class JUEntity;
     };
 
+    QString name() const { return m_name; }
     QList<Port> portsIn() const { return m_portsIn; }
     QList<Port> portsOut() const { return m_portsOut; }
 
     void addPort(const QString& name, const QString& mode, const QString& type);
+    void addPort(Port p);
+    static Port createPort(const QString& name, const QString& mode, const QString& type);
 
     QString description();
 

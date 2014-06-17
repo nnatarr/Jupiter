@@ -3,6 +3,8 @@
 #include "Shared/Logger/JULogger.h"
 
 #include "Parser/ParserVHDL/JUParserVHDL.h"
+#include <QApplication>
+#include <QDir>
 
 #define __JUMODULE__ "MainWindow"
 
@@ -11,7 +13,12 @@ JUMainWindow::JUMainWindow(QWidget *parent) : QMainWindow(parent)
     JUMLog("ctor {%p}.");
 
     JUParserVHDL *parser = new JUParserVHDL();
-    parser->parse("e:\\Dropbox\\!study\\dimploma\\Jupiter\\Jupiter\\Sources\\2band2_o2.vhdl");
+
+    QDir appDir(qApp->applicationDirPath());
+    appDir.cdUp();
+    appDir.cdUp();
+    appDir.cd("TestData");
+    parser->parse(appDir.path() + "/2band2_or2.vhdl");
     delete parser;
 }
 

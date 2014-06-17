@@ -36,11 +36,19 @@ private:
     void readEntity();
     void readEntityHeader(JUEntity &entity);
     void readArchitecture();
+    void readArchitectureDeclarativePart();
+    void readArchitectureStatementPart();
     void readPort(JUEntity &entity);
+    void readSignal();
+    void readComponent();
     void readInterfaceList(JUEntity &entity);
     QString readIdentifier();
 
-    enum ParserError { ParserError_ExpectedKeyword, ParserError_ExpectedSymbol, ParserError_UnknownSequence, ParserError_UnexpectedEOF, ParserError_WrongSymbol, ParserError_IdentifierDuplicate };
+    bool readKeyword(QString keyWord);
+
+    bool hasEntityWithName(QString name);
+
+    enum ParserError { ParserError_ExpectedKeyword, ParserError_ExpectedSymbol, ParserError_UnknownSequence, ParserError_UnexpectedEOF, ParserError_WrongSymbol, ParserError_IdentifierDuplicate, ParserError_UnknownEntity };
     void setErrorAtPosition(ParserError error, FilePos pos, const QString& keyword = "");
     void setError(ParserError error, const QString& keyword = "");
 };
