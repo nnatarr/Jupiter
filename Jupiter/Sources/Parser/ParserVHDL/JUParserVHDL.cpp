@@ -19,7 +19,6 @@
 
 #define SKIP_SPACES_WITH_CHECK { \
                                    SKIP_SPACES;\
-                                   CHECK_UEOF;\
                                    CHECK_ERROR;\
                                }
 
@@ -30,11 +29,22 @@ JUParserVHDL::JUParserVHDL() : JUParser()
     JUMLog("ctor {%p}.", this);
 
     m_state = JUParserVHDL::ParserStateNone;
+
+    m_ubsEntity = new JUEntity("2band2_or2");
+    m_inverter = new JUEntity("inverter");
 }
 
 JUParserVHDL::~JUParserVHDL()
 {
     JUMLog("dtor {%p}.", this);
+
+    for (int i = 0; i < m_entities.count(); ++i) {
+        delete m_entities[i];
+    }
+    m_entities.clear();
+
+    delete m_ubsEntity;
+    delete m_inverter;
 }
 
 // ========================================
@@ -109,9 +119,6 @@ JUSchemeTree* JUParserVHDL::parse(const QString& filePath)
             } else if (m_state == JUParserVHDL::ParserStateNone) {
                 if (m_currentChar == QChar('e')) {
                     readEntity();
-                    if (m_entities.count() > 0) {
-                        JUMLog("added:\n%s", Q(m_entities.last().description()));
-                    }
                 } else if (m_currentChar == QChar('a')) {
                     readArchitecture();
                 }
@@ -132,6 +139,10 @@ JUSchemeTree* JUParserVHDL::parse(const QString& filePath)
         return NULL;
     }
 
+    for (int i = 0; i < m_entities.count(); ++i) {
+        JUMLog("%s\n", Q(m_entities[i]->description()));
+    }
+
     JUMLog("VHDL parsed successful.");
     return tree;
 }
@@ -148,15 +159,17 @@ void JUParserVHDL::readEntity()
 
     QString entityName = readIdentifier();
     CHECK_ERROR;
-    JUMLog("entity name is %s.", Q(entityName));
+    JUMLog("entity name is \"%s\".", Q(entityName));
 
-    JUEntity entity(entityName);
+    JUEntity *entity = new JUEntity(entityName);
 
     if (!readKeyword("is")) {
         return;
     }
 
     readEntityHeader(entity);
+    entity->addComponent(m_inverter);
+    m_entities.append(entity);
     CHECK_ERROR;
 
     if (!readKeyword("end")) {
@@ -194,12 +207,10 @@ void JUParserVHDL::readEntity()
         readNext();
     }
 
-    m_entities.append(entity);
-
     m_state = JUParserVHDL::ParserStateNone;
 }
 
-void JUParserVHDL::readEntityHeader(JUEntity &entity)
+void JUParserVHDL::readEntityHeader(JUEntity *entity)
 {
     CHECK_ERROR;
     while (!isEOF() && m_currentChar.isSpace()) {
@@ -214,7 +225,7 @@ void JUParserVHDL::readEntityHeader(JUEntity &entity)
     }
 }
 
-void JUParserVHDL::readPort(JUEntity &entity)
+void JUParserVHDL::readPort(JUEntity *entity)
 {
     CHECK_ERROR;
 
@@ -248,7 +259,7 @@ void JUParserVHDL::readPort(JUEntity &entity)
     readNext();
 }
 
-void JUParserVHDL::readInterfaceList(JUEntity &entity)
+void JUParserVHDL::readInterfaceList(JUEntity *entity)
 {
     SKIP_SPACES_WITH_CHECK;
 
@@ -259,7 +270,7 @@ void JUParserVHDL::readInterfaceList(JUEntity &entity)
         while (!isEOF() && m_currentChar != QChar(':') && m_currentChar != QChar(')')) {
             QString portName = readIdentifier();
             CHECK_ERROR;
-            JUMLog("read port -> %s", Q(portName));
+            //JUMLog("read port -> %s", Q(portName));
             if (!ports.contains(portName)) {
                 ports.append(portName);
             } else {
@@ -284,17 +295,19 @@ void JUParserVHDL::readInterfaceList(JUEntity &entity)
         readNext();
         CHECK_UEOF;
         mode = readIdentifier();
-        JUMLog("read mode -> %s", Q(mode));
+        //JUMLog("read mode -> %s", Q(mode));
         CHECK_ERROR;
         SKIP_SPACES_WITH_CHECK;
         while (!isEOF() && m_currentChar != QChar(';') && m_currentChar != QChar(')')) {
             type = type % m_currentChar;
             readNext();
         }
-        JUMLog("read type -> %s", Q(type));
+        //JUMLog("read type -> %s", Q(type));
         if (m_currentChar == QChar(';') || m_currentChar == QChar(')')) {
             for (int i = 0; i < ports.count(); ++i) {
-                entity.addPort(ports[i], mode, type);
+                if (entity) {
+                    entity->addPort(ports[i], mode, type);
+                }
             }
         } else {
             setError(ParserError_ExpectedSymbol, ")");
@@ -316,7 +329,6 @@ void JUParserVHDL::readArchitecture()
 
     QString architectureName = readIdentifier();
     CHECK_ERROR;
-    JUMLog("architecture name is %s.", Q(architectureName));
 
     if (!readKeyword("of")) {
         return;
@@ -334,14 +346,17 @@ void JUParserVHDL::readArchitecture()
         return;
     }
 
-    readArchitectureDeclarativePart();
+    JUEntity *e = entityByName(entityName);
+    readArchitectureDeclarativePart(e);
     CHECK_ERROR;
+
+    JUMLog("architecture name for entity \"%s\" is \"%s.\"", Q(entityName), Q(architectureName));
 
     if (!readKeyword("begin")) {
         return;
     }
 
-    readArchitectureStatementPart();
+    readArchitectureStatementPart(e);
     CHECK_ERROR;
 
     if (!readKeyword("end")) {
@@ -382,15 +397,15 @@ void JUParserVHDL::readArchitecture()
     m_state = JUParserVHDL::ParserStateNone;
 }
 
-void JUParserVHDL::readArchitectureDeclarativePart()
+void JUParserVHDL::readArchitectureDeclarativePart(JUEntity *e)
 {
     SKIP_SPACES_WITH_CHECK;
     while (!isEOF() && m_currentChar != QChar('b') && m_state != ParserStateError) {
         SKIP_SPACES_WITH_CHECK;
         if (m_currentChar == QChar('c')) {
-            readComponent();
+            readComponent(e);
         } else if (m_currentChar == QChar('s')) {
-            readSignal();
+            readSignal(e);
         } else if (m_currentChar == QChar('b')) {
             //assume that this is 'begin' keyword
         } else {
@@ -399,7 +414,7 @@ void JUParserVHDL::readArchitectureDeclarativePart()
     }
 }
 
-void JUParserVHDL::readComponent()
+void JUParserVHDL::readComponent(JUEntity *e)
 {
     if (!readKeyword("component")) {
         return;
@@ -419,8 +434,7 @@ void JUParserVHDL::readComponent()
         }
     }
 
-    JUEntity e("tmpName");
-    readPort(e);
+    readPort(NULL);
 
     if (!readKeyword("end")) {
         return;
@@ -450,9 +464,14 @@ void JUParserVHDL::readComponent()
     } else {
         readNext();
     }
+
+    //JUMLog("storing component %s.", Q(componentName));
+    JUEntity *en = entityByName(componentName);
+    JUAssert(en != NULL, "entity not found");
+    e->addComponent(en);
 }
 
-void JUParserVHDL::readSignal()
+void JUParserVHDL::readSignal(JUEntity *e)
 {
     SKIP_SPACES_WITH_CHECK;
     if (!readKeyword("signal")) {
@@ -464,7 +483,7 @@ void JUParserVHDL::readSignal()
     while (!isEOF() && m_currentChar != QChar(':') && m_currentChar != QChar(';')) {
         QString portName = readIdentifier();
         CHECK_ERROR;
-        JUMLog("read port -> %s", Q(portName));
+        //JUMLog("read port -> %s", Q(portName));
         if (!ports.contains(portName)) {
             ports.append(portName);
         } else {
@@ -492,20 +511,110 @@ void JUParserVHDL::readSignal()
         type = type % m_currentChar;
         readNext();
     }
-    JUMLog("read type -> %s", Q(type));
+    //JUMLog("read type -> %s", Q(type));
     if (m_currentChar == QChar(';')) {
         //success, save ports
+        for (int i = 0; i < ports.count(); ++i) {
+            e->addDeclaredSignal(JUEntity::createPort(ports[i], "", type));
+        }
+        readNext();
     } else {
         setError(ParserError_ExpectedSymbol, ";");
         return;
     }
-    if (m_currentChar == QChar(';')) {
-        readNext();
+}
+
+void JUParserVHDL::readArchitectureStatementPart(JUEntity *e)
+{
+    SKIP_SPACES;
+    bool process = true;
+    while (!isEOF()) {
+        SKIP_SPACES;
+        if (m_currentChar == QChar('e')) {
+            int tmpCaretPos = m_caretPos;
+            FilePos tmpFilePos = m_currentPos;
+            QString lit = readIdentifier();
+            CHECK_ERROR;
+            if (lit == QString("end")) {
+                m_currentPos = tmpFilePos;
+                m_caretPos = tmpCaretPos;
+                m_currentChar = m_fileContent[m_caretPos - 1];
+                return;
+            }
+        } else {
+            readInstantiationStatement(e);
+            CHECK_ERROR;
+        }
     }
 }
 
-void JUParserVHDL::readArchitectureStatementPart()
+void JUParserVHDL::readInstantiationStatement(JUEntity *e)
 {
+    QString componentName = "";
+    SKIP_SPACES;
+    FilePos pos = m_currentPos;
+    QString lit = readIdentifier();
+    CHECK_ERROR;
+    if (m_currentChar == QChar(':')) {
+        readNext();
+        SKIP_SPACES;
+        pos = m_currentPos;
+        componentName = readIdentifier();
+        CHECK_ERROR;
+    } else {
+        componentName = lit;
+        lit = "";
+    }
+
+    if (!entityUseComponent(e, componentName)) {
+        setErrorAtPosition(ParserError_UndescribedEntityComponent, pos);
+        return;
+    }
+
+    if (!readKeyword("port")) {
+        return;
+    }
+
+    if (!readKeyword("map")) {
+        return;
+    }
+
+    SKIP_SPACES;
+    if (m_currentChar != QChar('(')) {
+        setError(ParserError_ExpectedSymbol, "(");
+        return;
+    }
+    readNext();
+
+    QList<QString> signal;
+    while (!isEOF() && m_currentChar != QChar(')')) {
+        QString signalName = readIdentifier();
+        CHECK_ERROR;
+        //JUMLog("read signal -> %s", Q(signalName));
+        signal.append(signalName);
+        if (m_currentChar != QChar(',') && m_currentChar != QChar(')')) {
+            setError(ParserError_ExpectedSymbol, ")");
+            return;
+        }
+        if (m_currentChar == QChar(',')) {
+            readNext();
+        }
+    }
+    CHECK_UEOF;
+    if (m_currentChar != QChar(')')) {
+        setError(ParserError_ExpectedSymbol, ")");
+        return;
+    }
+    readNext();
+    SKIP_SPACES_WITH_CHECK;
+    if (m_currentChar == QChar(';')) {
+        readNext();
+    } else {
+        setError(ParserError_ExpectedSymbol, ";");
+        return;
+    }
+
+    e->addMappedSignals(componentName, signal, lit);
 }
 
 QString JUParserVHDL::readIdentifier()
@@ -520,13 +629,10 @@ QString JUParserVHDL::readIdentifier()
         //JUMLog("loop: ident is %s", Q(identifier));
         readNext();
     }
-    if (!isEOF()) {
-        //JUMLog("read identifier -> %s", Q(identifier));
-        return identifier.toLower();
-    }
 
-    setError(ParserError_UnexpectedEOF);
-    return "";
+    //JUMLog("read identifier -> %s", Q(identifier));
+    return identifier.toLower();
+
 }
 
 bool JUParserVHDL::readKeyword(QString keyword)
@@ -562,7 +668,7 @@ bool JUParserVHDL::readNext()
             m_currentPos.line++;
             m_currentPos.column = -1;
         }
-        JUMLog("read char -> %c (at line %d, col %d).", m_currentChar, m_currentPos.line, m_currentPos.column);
+        //JUMLog("read char -> %c (at line %d, col %d).", m_currentChar, m_currentPos.line, m_currentPos.column);
         return true;
     }
     return false;
@@ -589,10 +695,13 @@ void JUParserVHDL::setErrorAtPosition(JUParserVHDL::ParserError error, FilePos p
         description = "unexpected end of file";
         break;
     case JUParserVHDL::ParserError_WrongSymbol:
-        description = "wrong symbol.";
+        description = "wrong symbol";
         break;
     case JUParserVHDL::ParserError_UnknownEntity:
-        description = "unknown entity name.";
+        description = "unknown entity name";
+        break;
+    case JUParserVHDL::ParserError_UndescribedEntityComponent:
+        description = "undescribed entity component";
         break;
     default:
         description = "unknown error";
@@ -608,10 +717,43 @@ bool JUParserVHDL::isCharAcceptableInIdentifier(const QChar& c)
     return !c.isSpace() && (c.isLetterOrNumber() || c == QChar('_'));
 }
 
+JUEntity* JUParserVHDL::entityByName(QString name)
+{
+    if (name == QString("inverter")) {
+        return m_inverter;
+    }
+    if (name == QString("2band2_or2")) {
+        return m_ubsEntity;
+    }
+    for (int i = 0; i < m_entities.count(); ++i) {
+        if (m_entities[i]->name() == name) {
+            return m_entities[i];
+        }
+    }
+    return NULL;
+}
+
 bool JUParserVHDL::hasEntityWithName(QString name)
 {
+    if (name == QString("inverter")) {
+        return true;
+    }
+    if (name == QString("2band2_or2")) {
+        return true;
+    }
     for (int i = 0; i < m_entities.count(); ++i) {
-        if (m_entities[i].name() == name) {
+        if (m_entities[i]->name() == name) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool JUParserVHDL::entityUseComponent(JUEntity *e, QString name)
+{
+    QList<JUEntity *> components = e->components();
+    for (int i = 0; i < components.count(); ++i) {
+        if (components[i]->name() == name) {
             return true;
         }
     }
