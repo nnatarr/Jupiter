@@ -3,7 +3,6 @@
 #define __JUPARSERVHDL_H__
 
 #include "../JUParser.h"
-#include "JUEntity.h"
 
 class JUParserVHDL : public JUParser
 {
@@ -11,7 +10,7 @@ public:
     JUParserVHDL();
     virtual ~JUParserVHDL();
 
-    virtual JUSchemeTree* parse(const QString& filePath);
+    virtual QList<JUEntity *> parse(const QString& filePath);
 
 private:
     enum ParserState { ParserStateNone, ParserStateError, ParserStateComment, ParserStateCommentMultiLine, ParserStateEntity, ParserStateArchitecture };

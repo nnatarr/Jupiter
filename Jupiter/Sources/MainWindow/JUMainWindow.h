@@ -4,12 +4,18 @@
 
 #include <QMainWindow>
 #include <QWidget>
+#include <QList>
+
+#include "Parser/JUEntity.h"
 
 class JUMainWindow : public QMainWindow
 {
 public:
     JUMainWindow(QWidget *parent = NULL);
     ~JUMainWindow();
+
+private:
+    QList<JUEntity *> m_entities;
 };
 
 #endif

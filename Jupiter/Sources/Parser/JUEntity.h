@@ -4,6 +4,7 @@
 
 #include <QString>
 #include <QList>
+#include <QMap>
 #include <QStringList>
 
 class JUEntity {
@@ -29,6 +30,10 @@ public:
     QList<JUEntity *> components() const { return m_components; }
     QList<Port> declaredSignals() const { return m_declaredSignals; }
 
+    enum EntityType { EntityTypeNone, EntityTypeLUT, EntityTypeUBS };
+    void setType(EntityType type);
+    EntityType type() const { return m_type; }
+
     void addPort(const QString& name, const QString& mode, const QString& type);
     void addPort(Port p);
     static Port createPort(const QString& name, const QString& mode, const QString& type);
@@ -37,8 +42,15 @@ public:
     void addDeclaredSignal(Port signal) { m_declaredSignals.append(signal); }
 
     QString description();
+
+    bool validate();
+    bool getOutput(QString input, QString *output);
+
 private:
     QString m_name;
+    EntityType m_type;
+    bool m_isValid;
+    QMap<QString, QString> m_lookupTable;
     QList<Port> m_portsIn;
     QList<Port> m_portsOut;
     QList<JUEntity *> m_components;
@@ -46,11 +58,22 @@ private:
 
     struct MappedSignals {
         QString componentName;
-        QStringList signal;
+        QStringList signalIn;
+        QStringList signalOut;
         QString label;
     };
 
     QList<MappedSignals> m_signalsMap;
+
+    bool generateLookupTable();
+    bool generateLUT();
+    bool generateUBS();
+    bool generateUBSOutputForInput(QString input);
+
+    JUEntity *componentByName(const QString& name);
+
+    QString stringListDescription(QStringList list);
+    QString mapStringStringListDescription(QMap<QString, QString> map);
 };
 
 #endif

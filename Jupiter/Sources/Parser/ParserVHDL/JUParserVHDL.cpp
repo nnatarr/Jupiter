@@ -32,41 +32,42 @@ JUParserVHDL::JUParserVHDL() : JUParser()
 
     m_ubsEntity = new JUEntity("2band2_or2");
     m_inverter = new JUEntity("inverter");
+
+    m_entities.append(m_ubsEntity);
+    m_entities.append(m_inverter);
 }
 
 JUParserVHDL::~JUParserVHDL()
 {
     JUMLog("dtor {%p}.", this);
 
-    for (int i = 0; i < m_entities.count(); ++i) {
+    /*for (int i = 0; i < m_entities.count(); ++i) {
         delete m_entities[i];
     }
     m_entities.clear();
 
     delete m_ubsEntity;
-    delete m_inverter;
+    delete m_inverter;*/
 }
 
 // ========================================
 
-JUSchemeTree* JUParserVHDL::parse(const QString& filePath)
+QList<JUEntity *> JUParserVHDL::parse(const QString& filePath)
 {
     JUMLog("parse.");
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         JUMLog("can't load file %s.", Q(filePath));
-        return NULL;
+        return QList<JUEntity *>();
     }
 
     QTextStream inputStream(&file);
     m_fileContent = inputStream.readAll();
     
     if (m_fileContent.length() == 0) {
-        return NULL;
+        return QList<JUEntity *>();
     }
-
-    JUSchemeTree *tree = new JUSchemeTree;
 
     m_caretPos = 0;
     m_currentPos.line = 0;
@@ -134,17 +135,16 @@ JUSchemeTree* JUParserVHDL::parse(const QString& filePath)
     }
 
     if (m_state == JUParserVHDL::ParserStateError) {
-        delete tree;
         m_fileContent.clear();
-        return NULL;
+        return QList<JUEntity *>();
     }
 
-    for (int i = 0; i < m_entities.count(); ++i) {
+    /*for (int i = 0; i < m_entities.count(); ++i) {
         JUMLog("%s\n", Q(m_entities[i]->description()));
-    }
+    }*/
 
     JUMLog("VHDL parsed successful.");
-    return tree;
+    return m_entities;
 }
 
 // ========================================
@@ -394,6 +394,7 @@ void JUParserVHDL::readArchitecture()
         readNext();
     }
 
+    e->validate();
     m_state = JUParserVHDL::ParserStateNone;
 }
 
@@ -615,6 +616,7 @@ void JUParserVHDL::readInstantiationStatement(JUEntity *e)
     }
 
     e->addMappedSignals(componentName, signal, lit);
+    e->setType(JUEntity::EntityTypeUBS);
 }
 
 QString JUParserVHDL::readIdentifier()
@@ -719,12 +721,12 @@ bool JUParserVHDL::isCharAcceptableInIdentifier(const QChar& c)
 
 JUEntity* JUParserVHDL::entityByName(QString name)
 {
-    if (name == QString("inverter")) {
+    /*if (name == QString("inverter")) {
         return m_inverter;
     }
     if (name == QString("2band2_or2")) {
         return m_ubsEntity;
-    }
+    }*/
     for (int i = 0; i < m_entities.count(); ++i) {
         if (m_entities[i]->name() == name) {
             return m_entities[i];
@@ -735,12 +737,12 @@ JUEntity* JUParserVHDL::entityByName(QString name)
 
 bool JUParserVHDL::hasEntityWithName(QString name)
 {
-    if (name == QString("inverter")) {
+    /*if (name == QString("inverter")) {
         return true;
     }
     if (name == QString("2band2_or2")) {
         return true;
-    }
+    }*/
     for (int i = 0; i < m_entities.count(); ++i) {
         if (m_entities[i]->name() == name) {
             return true;

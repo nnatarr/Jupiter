@@ -200,16 +200,14 @@
     </ClCompile>
     <ClCompile Include="Sources\main.cpp" />
     <ClCompile Include="Sources\MainWindow\JUMainWindow.cpp" />
-    <ClCompile Include="Sources\Parser\JUSchemeTree.cpp" />
-    <ClCompile Include="Sources\Parser\ParserVHDL\JUEntity.cpp" />
+    <ClCompile Include="Sources\Parser\JUEntity.cpp" />
     <ClCompile Include="Sources\Parser\ParserVHDL\JUParserVHDL.cpp" />
     <ClCompile Include="Sources\Shared\Logger\JULogger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sources\MainWindow\JUMainWindow.h" />
+    <ClInclude Include="Sources\Parser\JUEntity.h" />
     <ClInclude Include="Sources\Parser\JUParser.h" />
-    <ClInclude Include="Sources\Parser\JUSchemeTree.h" />
-    <ClInclude Include="Sources\Parser\ParserVHDL\JUEntity.h" />
     <ClInclude Include="Sources\Parser\ParserVHDL\JUParserVHDL.h" />
     <ClInclude Include="Sources\Shared\JUAssert.h" />
     <ClInclude Include="Sources\Shared\Logger\JULogger.h" />

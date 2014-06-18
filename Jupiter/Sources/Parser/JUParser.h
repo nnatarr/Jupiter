@@ -2,12 +2,12 @@
 #ifndef __JUPARSER_H__
 #define __JUPARSER_H__
 
-#include "JUSchemeTree.h"
+#include "JUEntity.h"
 
 class JUParser
 {
 public:
-    virtual JUSchemeTree* parse(const QString& filePath) = 0;
+    virtual QList<JUEntity *> parse(const QString& filePath) = 0;
 };
 
 #endif
