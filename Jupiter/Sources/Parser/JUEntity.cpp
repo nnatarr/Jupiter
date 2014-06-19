@@ -15,6 +15,7 @@ JUEntity::JUEntity(const QString& name)
     m_type = JUEntity::EntityTypeNone;
 
     m_isValid = true;
+    m_wasValidated = true;
     if (m_name == "inverter") {
         m_lookupTable["0"] = "1";
         m_lookupTable["1"] = "0";
@@ -47,6 +48,7 @@ JUEntity::JUEntity(const QString& name)
         addPort("y", "out", "BIT");
     } else {
         m_isValid = false;
+        m_wasValidated = false;
     }
 }
 
@@ -115,8 +117,8 @@ void JUEntity::addMappedSignals(const QString& componentName, QStringList signal
 
 bool JUEntity::validate()
 {
-    if (m_isValid) {
-        return true;
+    if (m_wasValidated) {
+        return m_isValid;
     }
 
     for (int i = 0; i < m_components.count(); ++i) {
@@ -138,11 +140,18 @@ bool JUEntity::validate()
     if (!m_isValid) {
         JUMLog("%s: validation failed.", Q(m_name));
     }
+
+    if (m_isValid) {
+        generateCommonLookupTable();
+    }
+
+    m_wasValidated = true;
     return m_isValid;
 }
 
 bool JUEntity::generateLookupTable()
 {
+    JUMLog("%s: generating look-up table.", Q(m_name));
     if (m_type == JUEntity::EntityTypeNone) {
         return false;
     }
@@ -286,6 +295,57 @@ bool JUEntity::generateLUT()
     return false;
 }
 
+bool JUEntity::generateCommonLookupTable()
+{
+    JUMLog("%s: generating common look-up table.", Q(m_name));
+    if (m_portsOut.count() != 1) {
+        return false;
+    }
+
+    for (int i = 0; i < m_lookupTable.count(); ++i) {
+        QString key = m_lookupTable.keys()[i];
+        if (m_lookupTable[key] == "0") {
+            continue;
+        }
+
+        QString elem;
+        for (int j = 0; j < key.length(); ++j) {
+            QChar c = key[j];
+            elem = elem % (c == '1' ? "1" : "0");
+        }
+
+        m_commonLookupTable.append(elem);
+    }
+
+    bool isChanged = true;
+    while (isChanged) {
+        QString x, y;
+        QString joined;
+        isChanged = false;
+        for (int i = 0; i < m_commonLookupTable.count(); ++i) {
+            for (int j = i + 1; j < m_commonLookupTable.count(); ++j) {
+                x = m_commonLookupTable[i];
+                y = m_commonLookupTable[j];
+                if (isChanged = join(x, y, &joined)) {
+                    break;
+                }
+            }
+
+            if (isChanged) {
+                break;
+            }
+        }
+
+        if (isChanged) {
+            m_commonLookupTable.removeOne(x);
+            m_commonLookupTable.removeOne(y);
+            m_commonLookupTable.append(joined);
+        }
+    }
+
+    return false;
+}
+
 // ========================================
 
 bool JUEntity::getOutput(QString input, QString *output)
@@ -344,11 +404,16 @@ QString JUEntity::description()
 
     if (m_isValid) {
         QString lutDesc = QString(" | look-up table =>\n");
-        for (int i = 0; i <m_lookupTable.count(); ++i) {
+        for (int i = 0; i < m_lookupTable.count(); ++i) {
             QString key = m_lookupTable.keys()[i];
             lutDesc = lutDesc % " |                   " % key % " => " % m_lookupTable[key] % "\n";
         }
         desc = desc % lutDesc;
+        QString clutDesc = QString(" | common look-up table =>\n");
+        for (int i = 0; i < m_commonLookupTable.count(); ++i) {
+            clutDesc = clutDesc % " |                         " % m_commonLookupTable[i] % "\n";
+        }
+        desc = desc % clutDesc;
     }
 
     return desc;
@@ -388,6 +453,32 @@ QString JUEntity::mapStringStringListDescription(QMap<QString, QString> map)
         desc = desc % ", " % key % " -> " % map[key];
     }
     return desc;
+}
+
+bool JUEntity::join(QString x, QString y, QString *result)
+{
+    if (x.length() != y.length()) {
+        return false;
+    }
+
+    for (int i = 0; i < x.length(); ++i) {
+        QString x_modified = cutChar(x, i);
+        if (x_modified == cutChar(y, i)) {
+            *result = x_modified.insert(i, '-');
+            return true;
+        }
+    }
+
+    return false;
+}
+
+QString JUEntity::cutChar(QString s, int pos)
+{
+    if (s.length() < pos) {
+        return s;
+    }
+
+    return s.remove(pos, 1);
 }
 
 // PORT =======================================================================

@@ -50,7 +50,9 @@ private:
     QString m_name;
     EntityType m_type;
     bool m_isValid;
+    bool m_wasValidated;
     QMap<QString, QString> m_lookupTable;
+    QList<QString> m_commonLookupTable;
     QList<Port> m_portsIn;
     QList<Port> m_portsOut;
     QList<JUEntity *> m_components;
@@ -69,6 +71,10 @@ private:
     bool generateLUT();
     bool generateUBS();
     bool generateUBSOutputForInput(QString input);
+    
+    bool generateCommonLookupTable();
+    bool join(QString x, QString y, QString *result);
+    QString cutChar(QString s, int pos);
 
     JUEntity *componentByName(const QString& name);
 
