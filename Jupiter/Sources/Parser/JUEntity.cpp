@@ -317,33 +317,99 @@ bool JUEntity::generateCommonLookupTable()
         m_commonLookupTable.append(elem);
     }
 
-    bool isChanged = true;
-    while (isChanged) {
-        QString x, y;
-        QString joined;
-        isChanged = false;
-        for (int i = 0; i < m_commonLookupTable.count(); ++i) {
-            for (int j = i + 1; j < m_commonLookupTable.count(); ++j) {
-                x = m_commonLookupTable[i];
-                y = m_commonLookupTable[j];
-                if (isChanged = join(x, y, &joined)) {
-                    break;
+    QMap<int, QList<QString>> groups;
+    for (int i = 0; i < m_commonLookupTable.count(); ++i) {
+        QString e = m_commonLookupTable[i];
+        groups[e.count("1")].append(e);
+    }
+
+    QList<QString> impls;
+    bool process = true;
+    while (process) {
+        bool joined = false;
+        QMap<int, QList<QString>> new_groups;
+        QMap<int, QList<QString>> tmp_groups = groups;
+        for (int i = 0; i < groups.keys().count() - 1; ++i) {
+            QList<QString> fg = groups[groups.keys()[i]];
+            QList<QString> sg = groups[groups.keys()[i + 1]];
+
+            for (int j = 0; j < fg.count(); ++j) {
+                for (int k = 0; k < sg.count(); ++k) {
+                    QString res;
+                    if (join(fg[j],sg[k], &res)) {
+                        if (tmp_groups[tmp_groups.keys()[i]].contains(fg[j])) {
+                            tmp_groups[tmp_groups.keys()[i]].removeOne(fg[j]);
+                        }
+                        if (tmp_groups[tmp_groups.keys()[i + 1]].contains(sg[k])) {
+                            tmp_groups[tmp_groups.keys()[i + 1]].removeOne(sg[k]);
+                        }
+                        int cnt = res.count("1");
+                        if (!new_groups.keys().contains(cnt) || !new_groups[cnt].contains(res)) {
+                            new_groups[cnt].append(res);
+                        }
+                        joined = true;
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i <= tmp_groups.keys().count() - 1; ++i) {
+            QList<QString> fg = tmp_groups[tmp_groups.keys()[i]];
+            for (int j = 0; j < tmp_groups[tmp_groups.keys()[i]].count(); ++j) {
+                if (!impls.contains(tmp_groups[tmp_groups.keys()[i]][j])) {
+                    impls.append(tmp_groups[tmp_groups.keys()[i]][j]);
                 }
             }
 
-            if (isChanged) {
-                break;
+            if (i < tmp_groups.keys().count() - 1) {
+                QList<QString> sg = tmp_groups[tmp_groups.keys()[i + 1]];
+                for (int j = 0; j < tmp_groups[tmp_groups.keys()[i + 1]].count(); ++j) {
+                    if (!impls.contains(tmp_groups[tmp_groups.keys()[i + 1]][j])) {
+                        impls.append(tmp_groups[tmp_groups.keys()[i + 1]][j]);
+                    }
+                }
             }
         }
 
-        if (isChanged) {
-            m_commonLookupTable.removeOne(x);
-            m_commonLookupTable.removeOne(y);
-            m_commonLookupTable.append(joined);
+        groups = new_groups;
+
+        process = joined;
+    }
+
+    QMap<QString, QSet<int>> map;
+    for (int i = 0; i < impls.count(); ++i) {
+        QString impl = impls[i];
+        map[impl] = QSet<int>();
+        for (int j = 0; j < m_commonLookupTable.count(); ++j) {
+            if (represents(impl, m_commonLookupTable[j])) {
+                map[impl].insert(j);;
+            }
         }
     }
 
-    return false;
+    QList<QString> resultImpls;
+
+    while (impls.count() > 0) {
+        int max = 0;
+        int idx = 0;
+        for (int i = 0; i < impls.count(); ++i) {
+            if (map[impls[i]].count() > max) {
+                idx = i;
+                max = map[impls[i]].count();
+            }
+        }
+
+        resultImpls.append(impls[idx]);
+        QString key = impls[idx];
+        for (int i = 0; i < map.count(); ++i) {
+            map[map.keys()[i]] -= map[key];
+        }
+        map.remove(key);
+        impls.removeAt(idx);
+    }
+
+    m_commonLookupTable = resultImpls;
+    return true;
 }
 
 // ========================================
@@ -441,6 +507,18 @@ QString JUEntity::stringListDescription(QStringList list)
     return desc;
 }
 
+QString JUEntity::intListDescription(QList<int> list)
+{
+    QString desc;
+    if (list.count() > 0) {
+        desc = QString::number(list[0]);
+    }
+    for (int i = 1; i < list.count(); ++i) {
+        desc = desc % ", " % QString::number(list[i]);
+    }
+    return desc;
+}
+
 QString JUEntity::mapStringStringListDescription(QMap<QString, QString> map)
 {
     QString desc;
@@ -455,20 +533,73 @@ QString JUEntity::mapStringStringListDescription(QMap<QString, QString> map)
     return desc;
 }
 
-bool JUEntity::join(QString x, QString y, QString *result)
+QString JUEntity::mapIntStringListDescription(QMap<int, QList<QString>> map)
+{
+    QString desc;
+    if (map.count() > 0) {
+        int key = map.keys()[0];
+        desc = QString("%1").arg(key) % " -> " % stringListDescription(map[key]);
+    }
+    for (int i = 1; i < map.count(); ++i) {
+        int key = map.keys()[i];
+        desc = desc % "\n" % QString("%1").arg(key) % " -> " % stringListDescription(map[key]);
+    }
+    return desc;
+}
+
+QString JUEntity::mapStringIntSetDescription(QMap<QString, QSet<int>> map) {
+    QString desc;
+    if (map.count() > 0) {
+        QString key = map.keys()[0];
+        desc = QString("%1").arg(key) % " -> (" % QString::number(map[key].count()) % ") " % intListDescription(map[key].toList());
+    }
+    for (int i = 1; i < map.count(); ++i) {
+        QString key = map.keys()[i];
+        desc = desc % "\n" % QString("%1").arg(key) % " -> (" % QString::number(map[key].count()) % ") " % intListDescription(map[key].toList());
+    }
+    return desc;
+}
+
+bool JUEntity::represents(QString x, QString y)
 {
     if (x.length() != y.length()) {
         return false;
     }
 
     for (int i = 0; i < x.length(); ++i) {
-        QString x_modified = cutChar(x, i);
-        if (x_modified == cutChar(y, i)) {
-            *result = x_modified.insert(i, '-');
-            return true;
+        if (x[i] != y[i] && x[i] != '-' && y[i] != '-') {
+            return false;
         }
     }
 
+    return true;
+}
+
+bool JUEntity::join(QString x, QString y, QString *result)
+{
+    if (x.length() != y.length()) {
+        return false;
+    }
+
+    QString res = x;
+    for (int i = 0; i < x.length(); ++i) {
+        if (x[i] != y[i] && (x[i] == '-' || y[i] == '-')) {
+            return false;
+        }
+        if (x[i] == y[i]) {
+            continue;
+        }
+        if (cutChar(x, i) == cutChar(y, i)) {
+            res = res.replace(i, 1, '-');
+        }
+    }
+
+    if (res != x) {
+        if (result) {
+            *result = res;
+        }
+        return true;
+    }
     return false;
 }
 

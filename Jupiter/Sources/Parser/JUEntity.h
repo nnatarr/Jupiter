@@ -6,6 +6,7 @@
 #include <QList>
 #include <QMap>
 #include <QStringList>
+#include <QSet>
 
 class JUEntity {
 public:
@@ -74,12 +75,16 @@ private:
     
     bool generateCommonLookupTable();
     bool join(QString x, QString y, QString *result);
+    bool represents(QString x, QString y);
     QString cutChar(QString s, int pos);
 
     JUEntity *componentByName(const QString& name);
 
     QString stringListDescription(QStringList list);
+    QString intListDescription(QList<int> list);
     QString mapStringStringListDescription(QMap<QString, QString> map);
+    QString mapIntStringListDescription(QMap<int, QList<QString>> map);
+    QString mapStringIntSetDescription(QMap<QString, QSet<int>> map);
 };
 
 #endif

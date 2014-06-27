@@ -240,6 +240,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="TestData\2band2_or2.vhdl" />
+    <None Include="TestData\2band2_or2_2.vhdl" />
+    <None Include="TestData\2band2_or2_3.vhdl" />
     <None Include="TestData\lut.vhdl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
