@@ -18,7 +18,7 @@ JUMainWindow::JUMainWindow(QWidget *parent) : QMainWindow(parent)
     appDir.cdUp();
     appDir.cdUp();
     appDir.cd("TestData");
-    m_entities = parser->parse(appDir.path() + "/2band2_or2_3.vhdl");
+    m_entities = parser->parse(appDir.path() + "/lut.vhdl");
     delete parser;
 
     if (m_entities.count() < 3) {    //have only 2band2_or2 and inverter entities.

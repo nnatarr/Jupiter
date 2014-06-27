@@ -3,6 +3,7 @@
 #include "Shared/Logger/JULogger.h"
 #include "Shared/JUAssert.h"
 
+#include <QRegExp>
 #include <QStringBuilder>
 
 #define __JUMODULE__ "Entity"
@@ -70,7 +71,23 @@ void JUEntity::setType(JUEntity::EntityType type)
 
 void JUEntity::addPort(const QString& name, const QString& mode, const QString& type)
 {
-    addPort(JUEntity::createPort(name, mode, type));
+    if (type.contains("vector")) {
+        QRegExp rx("(\\d)+");
+        int pos = 0;
+        pos = rx.indexIn(type, pos);
+        int first = rx.cap(1).toInt();
+        pos += rx.matchedLength();
+        pos = rx.indexIn(type, pos);
+        int second = rx.cap(1).toInt();
+
+        int count = abs(first - second) + 1;
+
+        for (int i = 0; i < count; ++i) {
+            addPort(JUEntity::createPort("ju_" % name % QString::number(i + 1), mode, "BIT"));
+        }
+    } else {
+        addPort(JUEntity::createPort(name, mode, type));
+    }
 }
 
 JUEntity::Port JUEntity::createPort(const QString& name, const QString& mode, const QString& type)
@@ -111,6 +128,48 @@ void JUEntity::addMappedSignals(const QString& componentName, QStringList signal
 
     m_signalsMap.append(m);
     //JUMLog("added signals map => %s: %s (in: %s; out: %s).", (label.isEmpty() ? "<no label>" : Q(label)), Q(componentName), Q(stringListDescription(m.signalIn)), Q(stringListDescription(m.signalOut)));
+}
+
+bool JUEntity::hasOutputPort(QString output)
+{
+    for (int i = 0; i < m_portsOut.count(); ++i) {
+        if (m_portsOut[i].name.toLower() == output) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool JUEntity::setLUT(QMap<QString, QString> lut)
+{
+    for (int i = 0; i < lut.count(); ++i) {
+        QString input = lut.keys()[i];
+        QString output = lut[input];
+
+        if (input.length() != m_portsIn.count() || output.length() != m_portsOut.count()) {
+            return false;
+        }
+
+        for (int j = 0; j < qMax(input.length(), output.length()); ++j) {
+            if (j < input.length()) {
+                if (input[j] != '0' && input[j] != '1') {
+                    return false;
+                }
+            }
+            if (j < output.length()) {
+                if (output[j] != '0' && output[j] != '1') {
+                    return false;
+                }
+            }
+        }
+    }
+
+    if (lut.count() != pow(2, m_portsIn.count())) {
+        return false;
+    }
+
+    m_lookupTable = lut;
+    return true;
 }
 
 // ========================================
@@ -292,7 +351,7 @@ bool JUEntity::generateUBSOutputForInput(QString input)
 
 bool JUEntity::generateLUT()
 {
-    return false;
+    return (m_lookupTable.count() > 0);
 }
 
 bool JUEntity::generateCommonLookupTable()
@@ -461,13 +520,14 @@ QString JUEntity::description()
         declaredSignalsDesc = declaredSignalsDesc % s.name % ": " % s.type % "; ";
     }
     desc = desc % declaredSignalsDesc % "\n";
-    QString signalsMapDesc = QString(" | signals map =>\n");
-    for (int i = 0; i < m_signalsMap.count(); ++i) {
-        MappedSignals ms = m_signalsMap[i];
-        signalsMapDesc = signalsMapDesc % " |                " % (ms.label.isEmpty() ? "<no label>" : ms.label) % ": " % ms.componentName % " (in: " % stringListDescription(ms.signalIn) % "; out: " % stringListDescription(ms.signalOut) % ")\n";
+    if (m_type == EntityTypeUBS) {
+        QString signalsMapDesc = QString(" | signals map =>\n");
+        for (int i = 0; i < m_signalsMap.count(); ++i) {
+            MappedSignals ms = m_signalsMap[i];
+            signalsMapDesc = signalsMapDesc % " |                " % (ms.label.isEmpty() ? "<no label>" : ms.label) % ": " % ms.componentName % " (in: " % stringListDescription(ms.signalIn) % "; out: " % stringListDescription(ms.signalOut) % ")\n";
+        }
+        desc = desc % signalsMapDesc;
     }
-    desc = desc % signalsMapDesc;
-
     if (m_isValid) {
         QString lutDesc = QString(" | look-up table =>\n");
         for (int i = 0; i < m_lookupTable.count(); ++i) {

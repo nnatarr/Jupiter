@@ -40,6 +40,7 @@ private:
     void readArchitectureDeclarativePart(JUEntity *e);
     void readArchitectureStatementPart(JUEntity *e);
     void readInstantiationStatement(JUEntity *e);
+    void readProcessStatement(JUEntity *e);
     void readPort(JUEntity *entity);
     void readSignal(JUEntity *e);
     void readComponent(JUEntity *e);
@@ -53,7 +54,8 @@ private:
     bool entityUseComponent(JUEntity *e, QString name);
 
     enum ParserError { ParserError_ExpectedKeyword, ParserError_ExpectedSymbol, ParserError_UnknownSequence, ParserError_UnexpectedEOF, 
-                       ParserError_WrongSymbol, ParserError_IdentifierDuplicate, ParserError_UnknownEntity, ParserError_UndescribedEntityComponent};
+                       ParserError_WrongSymbol, ParserError_IdentifierDuplicate, ParserError_UnknownEntity, ParserError_UndescribedEntityComponent,
+                       ParserError_IncorrectLUTDescription, ParserError_UnknownOutputPort };
     void setErrorAtPosition(ParserError error, FilePos pos, const QString& keyword = "");
     void setError(ParserError error, const QString& keyword = "");
 };

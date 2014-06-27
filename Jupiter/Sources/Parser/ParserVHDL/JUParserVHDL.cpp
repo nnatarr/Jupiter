@@ -19,7 +19,7 @@
 
 #define SKIP_SPACES_WITH_CHECK { \
                                    SKIP_SPACES;\
-                                   CHECK_ERROR;\
+                                   CHECK_UEOF;\
                                }
 
 #define __JUMODULE__ "ParserVHDL"
@@ -279,15 +279,17 @@ void JUParserVHDL::readInterfaceList(JUEntity *entity)
                 setErrorAtPosition(ParserError_IdentifierDuplicate, pos);
                 return;
             }
+            SKIP_SPACES_WITH_CHECK;
             if (m_currentChar != QChar(',') && m_currentChar != QChar(':')) {
                 setError(ParserError_ExpectedSymbol, ":");
                 return;
             }
+            SKIP_SPACES_WITH_CHECK;
             if (m_currentChar == QChar(',')) {
                 readNext();
             }
         }
-        CHECK_UEOF;
+        SKIP_SPACES_WITH_CHECK;
         if (m_currentChar != QChar(':')) {
             setError(ParserError_ExpectedSymbol, ":");
             return;
@@ -298,9 +300,15 @@ void JUParserVHDL::readInterfaceList(JUEntity *entity)
         //JUMLog("read mode -> %s", Q(mode));
         CHECK_ERROR;
         SKIP_SPACES_WITH_CHECK;
-        while (!isEOF() && m_currentChar != QChar(';') && m_currentChar != QChar(')')) {
+        while (!isEOF() && m_currentChar != QChar(';')/* && m_currentChar != QChar(')')*/) {
+            if (m_currentChar == ')') {
+                if (!(type.toLower().contains("std_ulogic_vector") || type.toLower().contains("std_logic_vector"))) {
+                    break;
+                }
+            }
             type = type % m_currentChar;
             readNext();
+            SKIP_SPACES_WITH_CHECK;
         }
         //JUMLog("read type -> %s", Q(type));
         if (m_currentChar == QChar(';') || m_currentChar == QChar(')')) {
@@ -313,9 +321,11 @@ void JUParserVHDL::readInterfaceList(JUEntity *entity)
             setError(ParserError_ExpectedSymbol, ")");
             return;
         }
+        SKIP_SPACES_WITH_CHECK;
         if (m_currentChar == QChar(';')) {
             readNext();
         }
+        SKIP_SPACES_WITH_CHECK;
     }
 }
 
@@ -542,10 +552,213 @@ void JUParserVHDL::readArchitectureStatementPart(JUEntity *e)
                 m_currentChar = m_fileContent[m_caretPos - 1];
                 return;
             }
+        } else if (m_currentChar == QChar('p')) {
+            int tmpCaretPos = m_caretPos;
+            FilePos tmpFilePos = m_currentPos;
+            QString lit = readIdentifier();
+            CHECK_ERROR;
+            if (lit == QString("process")) {
+                m_currentPos = tmpFilePos;
+                m_caretPos = tmpCaretPos;
+                m_currentChar = m_fileContent[m_caretPos - 1];
+                readProcessStatement(e);
+                CHECK_ERROR;
+            } else {
+                m_currentPos = tmpFilePos;
+                m_caretPos = tmpCaretPos;
+                m_currentChar = m_fileContent[m_caretPos - 1];
+                readInstantiationStatement(e);
+                CHECK_ERROR;
+            }
         } else {
             readInstantiationStatement(e);
             CHECK_ERROR;
         }
+    }
+}
+
+void JUParserVHDL::readProcessStatement(JUEntity *e)
+{
+    SKIP_SPACES;
+    if (!readKeyword("process")) {
+        return;
+    }
+
+    SKIP_SPACES;
+    bool waitCloseBracket = false;
+    if (m_currentChar == '(') {
+        waitCloseBracket = true;
+    }
+    readNext();
+
+    QString signal_name = readIdentifier();
+    CHECK_ERROR;
+
+    SKIP_SPACES;
+    if (waitCloseBracket && m_currentChar != ')') {
+        setError(ParserError_ExpectedSymbol, ")");
+        return;
+    }
+    readNext();
+
+    if (!readKeyword("is")) {
+        return;
+    }
+
+    if (!readKeyword("begin")) {
+        return;
+    }
+
+    if (!readKeyword("case")) {
+        return;
+    }
+
+    FilePos tmpPos = m_currentPos;
+    QString signal_case = readIdentifier();
+    CHECK_ERROR;
+    if (signal_case != signal_name) {
+        setErrorAtPosition(ParserError_ExpectedKeyword, tmpPos, signal_name);
+        return;
+    }
+
+    if (!readKeyword("of")) {
+        return;
+    }
+
+    SKIP_SPACES_WITH_CHECK;
+    QMap<QString, QString> lut;
+    QString lit = readIdentifier();
+    FilePos pos = m_currentPos;
+    QChar cc = m_currentChar;
+    int caretPos = m_caretPos;
+    while (m_state != JUParserVHDL::ParserStateError && lit == "when") {
+        SKIP_SPACES_WITH_CHECK;
+        if (m_currentChar != '"') {
+            setError(ParserError_ExpectedSymbol, "\"");
+            return;
+        }
+        readNext();
+
+        QString input = readIdentifier();
+        CHECK_ERROR;
+        SKIP_SPACES_WITH_CHECK;
+        if (m_currentChar != '"') {
+            setError(ParserError_ExpectedSymbol, "\"");
+            return;
+        }
+        readNext();
+
+        SKIP_SPACES_WITH_CHECK;
+        if (m_currentChar != '=') {
+            setError(ParserError_ExpectedSymbol, "=>");
+            return;
+        }
+        readNext();
+        CHECK_UEOF;
+        if (m_currentChar != '>') {
+            setError(ParserError_ExpectedSymbol, "=>");
+            return;
+        }
+        readNext();
+        SKIP_SPACES_WITH_CHECK;
+
+        pos = m_currentPos;
+        cc = m_currentChar;
+        caretPos = m_caretPos;
+        QString output_name = readIdentifier();
+        CHECK_ERROR;
+
+        if (!e->hasOutputPort(output_name)) {
+            m_currentPos = pos;
+            m_currentChar = cc;
+            m_caretPos = caretPos;
+            setError(ParserError_UnknownOutputPort);
+            return;
+        }
+
+        SKIP_SPACES_WITH_CHECK;
+        if (m_currentChar != '<') {
+            setError(ParserError_ExpectedSymbol, "<=");
+            return;
+        }
+        readNext();
+        CHECK_UEOF;
+        if (m_currentChar != '=') {
+            setError(ParserError_ExpectedSymbol, "<=");
+            return;
+        }
+        readNext();
+        SKIP_SPACES_WITH_CHECK;
+
+        SKIP_SPACES_WITH_CHECK;
+        if (m_currentChar != '"') {
+            setError(ParserError_ExpectedSymbol, "\"");
+            return;
+        }
+        readNext();
+
+        QString output = readIdentifier();
+        CHECK_ERROR;
+        SKIP_SPACES_WITH_CHECK;
+        if (m_currentChar != '"') {
+            setError(ParserError_ExpectedSymbol, "\"");
+            return;
+        }
+        readNext();
+
+        SKIP_SPACES_WITH_CHECK;
+        if (m_currentChar != ';') {
+            setError(ParserError_ExpectedSymbol, ";");
+            return;
+        } 
+        
+        readNext();
+
+        lut[input] = output;
+
+        pos = m_currentPos;
+        cc = m_currentChar;
+        caretPos = m_caretPos;
+        lit = readIdentifier();
+    }
+
+    CHECK_ERROR;
+    if (lit != "end") {
+        m_currentPos = pos;
+        m_currentChar = cc;
+        m_caretPos = caretPos;
+        setError(ParserError_ExpectedKeyword, "end");
+        return;
+    }
+    
+    if (!readKeyword("case")) {
+        return;
+    }
+
+    SKIP_SPACES_WITH_CHECK;
+    if (m_currentChar != ';') {
+        setError(ParserError_ExpectedSymbol, ";");
+        return;
+    }
+    readNext();
+
+    if (!readKeyword("end")) {
+        return;
+    }
+
+    if (!readKeyword("process")) {
+        return;
+    }
+
+    if (m_currentChar == ';') {
+        e->setType(JUEntity::EntityTypeLUT);
+        if (!e->setLUT(lut)) {
+            setError(ParserError_IncorrectLUTDescription);
+            return;
+        }
+        readNext();
+    } else {
+        setError(ParserError_ExpectedSymbol, ";");
     }
 }
 
@@ -678,7 +891,7 @@ bool JUParserVHDL::readNext()
 
 void JUParserVHDL::setError(JUParserVHDL::ParserError error, const QString& keyword)
 {
-    setErrorAtPosition(error, m_currentPos);
+    setErrorAtPosition(error, m_currentPos, keyword);
 }
 
 void JUParserVHDL::setErrorAtPosition(JUParserVHDL::ParserError error, FilePos pos, const QString& keyword)
@@ -687,6 +900,9 @@ void JUParserVHDL::setErrorAtPosition(JUParserVHDL::ParserError error, FilePos p
 
     QString description = "unknown error";
     switch (error) {
+    case JUParserVHDL::ParserError_ExpectedSymbol:
+        description = QString("waiting for '%1'").arg(keyword);
+        break;
     case JUParserVHDL::ParserError_ExpectedKeyword:
         description = QString("waiting for '%1'").arg(keyword);
         break;
@@ -704,6 +920,12 @@ void JUParserVHDL::setErrorAtPosition(JUParserVHDL::ParserError error, FilePos p
         break;
     case JUParserVHDL::ParserError_UndescribedEntityComponent:
         description = "undescribed entity component";
+        break;
+    case JUParserVHDL::ParserError_IncorrectLUTDescription:
+        description = "incorrect look-up table description";
+        break;
+    case JUParserVHDL::ParserError_UnknownOutputPort:
+        description = "unknown output port";
         break;
     default:
         description = "unknown error";

@@ -42,10 +42,14 @@ public:
     void addComponent(JUEntity *e) { if (!m_components.contains(e)) m_components.append(e); }
     void addDeclaredSignal(Port signal) { m_declaredSignals.append(signal); }
 
+    bool setLUT(QMap<QString, QString> lut);
+
     QString description();
 
     bool validate();
     bool getOutput(QString input, QString *output);
+
+    bool hasOutputPort(QString output);
 
 private:
     QString m_name;
