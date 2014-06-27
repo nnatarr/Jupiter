@@ -113,7 +113,6 @@ void JUEntity::addMappedSignals(const QString& componentName, QStringList signal
 {
     MappedSignals m;
     m.componentName = componentName;
-    //m.signal = signal;
     m.label = label;
 
     JUEntity *component = componentByName(componentName);

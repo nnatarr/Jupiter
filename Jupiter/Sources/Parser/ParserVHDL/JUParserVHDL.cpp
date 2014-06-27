@@ -29,25 +29,21 @@ JUParserVHDL::JUParserVHDL() : JUParser()
     JUMLog("ctor {%p}.", this);
 
     m_state = JUParserVHDL::ParserStateNone;
-
-    m_ubsEntity = new JUEntity("2band2_or2");
-    m_inverter = new JUEntity("inverter");
-
-    /*m_entities.append(m_ubsEntity);
-    m_entities.append(m_inverter);*/
 }
 
 JUParserVHDL::~JUParserVHDL()
 {
     JUMLog("dtor {%p}.", this);
 
-    /*for (int i = 0; i < m_entities.count(); ++i) {
-        delete m_entities[i];
-    }
-    m_entities.clear();
+    //for (int i = 0; i < m_entities.count(); ++i) {
+    //    if (m_entities[i] != m_ubsEntity && m_entities[i] != m_inverter) { 
+    //        delete m_entities[i];
+    //    }
+    //}
+    //m_entities.clear();
 
-    delete m_ubsEntity;
-    delete m_inverter;*/
+    //delete m_ubsEntity;
+    //delete m_inverter;
 }
 
 // ========================================
@@ -168,7 +164,6 @@ void JUParserVHDL::readEntity()
     }
 
     readEntityHeader(entity);
-    //entity->addComponent(m_inverter);
     m_entities.append(entity);
     CHECK_ERROR;
 
@@ -943,34 +938,34 @@ bool JUParserVHDL::isCharAcceptableInIdentifier(const QChar& c)
 
 JUEntity* JUParserVHDL::entityByName(QString name)
 {
-    /*if (name == QString("inverter")) {
-        return m_inverter;
-    }
-    if (name == QString("2band2_or2")) {
-        return m_ubsEntity;
-    }*/
+    JUEntity *e = NULL;
     for (int i = 0; i < m_entities.count(); ++i) {
         if (m_entities[i]->name() == name) {
-            return m_entities[i];
+            e = m_entities[i];
+            break;
         }
     }
-    return NULL;
+    if (name == QString("inverter")) {
+        e = new JUEntity("inverter");
+        m_entities.append(e);
+    }
+    if (name == QString("2band2_or2")) {
+        e = new JUEntity("2band2_or2");
+        m_entities.append(e);
+    }
+    return e;
 }
 
 bool JUParserVHDL::hasEntityWithName(QString name)
 {
-    if (name == QString("inverter")) {
-        m_entities.append(m_inverter);
-        return true;
-    }
-    if (name == QString("2band2_or2")) {
-        m_entities.append(m_ubsEntity);
-        return true;
-    }
     for (int i = 0; i < m_entities.count(); ++i) {
         if (m_entities[i]->name() == name) {
             return true;
         }
+    }
+    if (name == QString("inverter") || name == QString("2band2_or2")) {
+        m_entities.append(new JUEntity(name));
+        return true;
     }
     return false;
 }
@@ -982,6 +977,13 @@ bool JUParserVHDL::entityUseComponent(JUEntity *e, QString name)
         if (components[i]->name() == name) {
             return true;
         }
+    }
+    if (name == QString("inverter") || name == QString("2band2_or2")) {
+        JUEntity *inverter = new JUEntity(name);
+        m_entities.append(inverter);
+        e->addComponent(inverter);
+        return true;
+
     }
     return false;
 }

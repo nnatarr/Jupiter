@@ -23,8 +23,8 @@ private:
         int column;
     } m_currentPos;
     QString m_fileContent;
-    JUEntity *m_ubsEntity;
-    JUEntity *m_inverter;
+    //JUEntity *m_ubsEntity;
+    //JUEntity *m_inverter;
 
     QList<JUEntity *> m_entities;
 
