@@ -21,14 +21,17 @@ JUMainWindow::JUMainWindow(QWidget *parent) : QMainWindow(parent)
     m_entities = parser->parse(appDir.path() + "/lut.vhdl");
     delete parser;
 
-    if (m_entities.count() < 3) {    //have only 2band2_or2 and inverter entities.
+    if (m_entities.count() == 0) {    //have only 2band2_or2 and inverter entities.
         JUMLog("no entities found.");
         return;
     }
 
     QList<JUEntity *> usedEntities;
-    for (int i = 2; i < m_entities.count(); ++i) {
+    for (int i = 0; i < m_entities.count(); ++i) {
         JUEntity *e = m_entities[i];
+        if (e->name() == "inverter" || e->name() == "2band2_or2") {
+            continue;
+        }
         QList<JUEntity *> components = e->components();
         for (int j = 0; j < components.count(); ++j) {
             if (!usedEntities.contains(components[j])) {
@@ -38,9 +41,9 @@ JUMainWindow::JUMainWindow(QWidget *parent) : QMainWindow(parent)
     }
 
     JUEntity *mainEntity = NULL;
-    for (int i = 2; i < m_entities.count(); ++i) {
+    for (int i = 0; i < m_entities.count(); ++i) {
         JUEntity *entity = m_entities[i];
-        if (!usedEntities.contains(entity)) {
+        if (!usedEntities.contains(entity) && !(entity->name() == "inverter" || entity->name() == "2band2_or2")) {
             mainEntity = entity;
             break;
         }

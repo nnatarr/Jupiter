@@ -18,6 +18,7 @@ JUEntity::JUEntity(const QString& name)
     m_isValid = true;
     m_wasValidated = true;
     if (m_name == "inverter") {
+        m_type = JUEntity::EntityTypeUBS;
         m_lookupTable["0"] = "1";
         m_lookupTable["1"] = "0";
 
