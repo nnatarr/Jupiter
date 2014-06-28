@@ -378,7 +378,7 @@ void JUParserVHDL::readArchitecture()
             return;
         }
 
-        SKIP_SPACES_WITH_CHECK;
+        SKIP_SPACES;
         if (m_currentChar != QChar(';')) {
             FilePos pos2 = m_currentPos;
             QString lit2 = readIdentifier();
@@ -801,6 +801,7 @@ void JUParserVHDL::readInstantiationStatement(JUEntity *e)
         CHECK_ERROR;
         //JUMLog("read signal -> %s", Q(signalName));
         signal.append(signalName);
+        SKIP_SPACES_WITH_CHECK;
         if (m_currentChar != QChar(',') && m_currentChar != QChar(')')) {
             setError(ParserError_ExpectedSymbol, ")");
             return;
@@ -809,7 +810,7 @@ void JUParserVHDL::readInstantiationStatement(JUEntity *e)
             readNext();
         }
     }
-    CHECK_UEOF;
+    SKIP_SPACES_WITH_CHECK;
     if (m_currentChar != QChar(')')) {
         setError(ParserError_ExpectedSymbol, ")");
         return;
@@ -872,7 +873,7 @@ bool JUParserVHDL::isEOF()
 bool JUParserVHDL::readNext()
 {
     if (canReadNext()) {
-        m_currentChar = m_fileContent[m_caretPos++];
+        m_currentChar = m_fileContent[m_caretPos++].toLower();
         m_currentPos.column++;
         if (m_currentChar == '\n') {
             m_currentPos.line++;

@@ -8,7 +8,8 @@
 #include <QStringList>
 #include <QSet>
 
-class JUEntity {
+class JUEntity
+{
 public:
     JUEntity(const QString& name);
     ~JUEntity();
@@ -30,6 +31,9 @@ public:
     QList<Port> portsOut() const { return m_portsOut; }
     QList<JUEntity *> components() const { return m_components; }
     QList<Port> declaredSignals() const { return m_declaredSignals; }
+
+    QMap<QString, QString> lut() const { return m_lookupTable; }
+    QList<QString> commonLUT() const { return m_commonLookupTable; }
 
     enum EntityType { EntityTypeNone, EntityTypeLUT, EntityTypeUBS };
     void setType(EntityType type);

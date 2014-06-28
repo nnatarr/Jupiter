@@ -458,11 +458,17 @@ bool JUEntity::generateCommonLookupTable()
             }
         }
 
+        if (max == 0) {
+            break;
+        }
+
         resultImpls.append(impls[idx]);
         QString key = impls[idx];
+        //JUMLog("appending impl %s.", Q(key));
         for (int i = 0; i < map.count(); ++i) {
             map[map.keys()[i]] -= map[key];
         }
+        //JUMLog("%s", Q(mapStringIntSetDescription(map)));
         map.remove(key);
         impls.removeAt(idx);
     }
