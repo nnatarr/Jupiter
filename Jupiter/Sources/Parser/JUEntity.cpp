@@ -205,6 +205,7 @@ bool JUEntity::validate()
     }
 
     m_wasValidated = true;
+    //JUMLog("entity %s obtained: %s.", Q(m_name), Q(description()));
     return m_isValid;
 }
 

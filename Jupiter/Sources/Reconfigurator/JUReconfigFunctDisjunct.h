@@ -15,9 +15,11 @@ public:
     ~JUReconfigFunctDisjunct();
 
     int rank();
-    static int or_rank(const JUReconfigFunctDisjunct& one, const JUReconfigFunctDisjunct& two);
+    static int union_rank(const JUReconfigFunctDisjunct& one, const JUReconfigFunctDisjunct& two);
 
     QMap<QString, QString> lut() const { return m_lut; }
+
+    QSet<int> portsIn() const { return m_portsIn; }
 
     JUReconfigFunctDisjunct& operator+=(const JUReconfigFunctDisjunct& d);
     JUReconfigFunctDisjunct operator+(const JUReconfigFunctDisjunct& d);
@@ -30,7 +32,7 @@ private:
     QList<QList<QString>> m_impls;
     QMap<QString, QString> m_lut;
     QSet<int> m_portsIn;
-    QString m_portOut;
+    //QString m_portOut;
 
     QMap<QString, QString> generateEmptyLUT(int varsCount);
     QMap<QString, QString> generateLUT(QString impl);

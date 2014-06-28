@@ -4,6 +4,7 @@
 JUSchemeErrorLUT::JUSchemeErrorLUT() : JUSchemeError()
 {
     m_errorType = LUTSchemeErrorTypeNone;
+    m_innerElementIndex = -1;
 }
 
 JUSchemeErrorLUT::~JUSchemeErrorLUT()

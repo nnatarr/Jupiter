@@ -13,8 +13,15 @@ class JUEntity
 public:
     JUEntity(const QString& name);
     ~JUEntity();
-
+    
+    struct MappedSignals {
+        QString componentName;
+        QStringList signalIn;
+        QStringList signalOut;
+        QString label;
+    };
     void addMappedSignals(const QString& componentName, QStringList signal, const QString& label = QString(""));
+    QList<MappedSignals> singnalsMap() const { return m_signalsMap; }
 
     struct Port {
         QString name;
@@ -66,13 +73,6 @@ private:
     QList<Port> m_portsOut;
     QList<JUEntity *> m_components;
     QList<Port> m_declaredSignals;
-
-    struct MappedSignals {
-        QString componentName;
-        QStringList signalIn;
-        QStringList signalOut;
-        QString label;
-    };
 
     QList<MappedSignals> m_signalsMap;
 

@@ -2,7 +2,7 @@
 #ifndef __JUSCHEMEERRORLUT_H__
 #define __JUSCHEMEERRORLUT_H__
 
-#include "JUSchemeError.h"
+#include "Reconfigurator/JUSchemeError.h"
 
 class JUSchemeErrorLUT : public JUSchemeError
 {
@@ -12,6 +12,8 @@ public:
 
     enum LUTSchemeErrorType { LUTSchemeErrorTypeNone, LUTSchemeErrorTypePort, LUTSchemeErrorTypeTransistor, LUTSchemeErrorTypeMultiplexer };
     bool initError(LUTSchemeErrorType errorType, int innerElementIndex);
+
+    LUTSchemeErrorType type() { return m_errorType; }
 
     virtual bool isValid();
 

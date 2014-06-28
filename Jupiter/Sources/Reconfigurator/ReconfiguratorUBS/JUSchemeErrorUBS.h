@@ -2,7 +2,7 @@
 #ifndef __JUSCHEMEERRORUBS_H__
 #define __JUSCHEMEERRORUBS_H__
 
-#include "JUSchemeError.h"
+#include "Reconfigurator/JUSchemeError.h"
 
 class JUSchemeErrorUBS : public JUSchemeError
 {

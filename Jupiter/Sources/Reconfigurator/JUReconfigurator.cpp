@@ -5,6 +5,7 @@
 #include "Shared/JUAssert.h"
 
 #include "JUReconfigFunctDisjunct.h"
+#include "ReconfiguratorLUT/JUReconfLUT.h"
 
 #define __JUMODULE__ "Reconfigurator"
 
@@ -100,10 +101,11 @@ bool JUReconfigurator::checkMainEntity()
 
 void JUReconfigurator::test()
 {
-    QList<QString> clut = m_mainEntity->commonLUT();
-
-    JUReconfigFunctDisjunct d(clut[0]);
-    for (int i = 1; i < clut.count(); ++i) {
-        d += JUReconfigFunctDisjunct(clut[i]);
-    }
+    QList<JUSchemeErrorLUT> errors;
+    JUSchemeErrorLUT error;
+    error.initError(JUSchemeErrorLUT::LUTSchemeErrorTypePort, 0);
+    errors << error;
+    JUReconfLUT r(m_mainEntity->commonLUT(), errors, m_mainEntity->singnalsMap().count(), 0, 4);
+    bool success = r.configure();
+    JUMLog("configuration succeeded: %d.", success);
 }

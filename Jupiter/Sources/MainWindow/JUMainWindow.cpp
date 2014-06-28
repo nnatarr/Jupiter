@@ -20,7 +20,7 @@ JUMainWindow::JUMainWindow(QWidget *parent) : QMainWindow(parent)
     appDir.cdUp();
     appDir.cdUp();
     appDir.cd("TestData");
-    m_entities = parser->parse(appDir.path() + "/2band2_or2_2.vhdl");
+    m_entities = parser->parse(appDir.path() + "/ex_two.vhdl");
     delete parser;
 
     JUReconfigurator *reconfigurator = new JUReconfigurator(&m_entities, 5, 0);

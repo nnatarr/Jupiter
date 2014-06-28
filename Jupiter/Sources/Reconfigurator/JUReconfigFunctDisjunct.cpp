@@ -54,7 +54,7 @@ int JUReconfigFunctDisjunct::rank()
     return m_rank;
 }
 
-int JUReconfigFunctDisjunct::or_rank(const JUReconfigFunctDisjunct& one, const JUReconfigFunctDisjunct& two)
+int JUReconfigFunctDisjunct::union_rank(const JUReconfigFunctDisjunct& one, const JUReconfigFunctDisjunct& two)
 {
     QSet<int> ports = one.m_portsIn;
     return (ports.unite(two.m_portsIn)).count();
@@ -109,7 +109,7 @@ QSet<int> JUReconfigFunctDisjunct::getUsedPorts(QList<QList<QString>> impl)
         QList<QString> impls = impl[k];
         for (int i = 0; i < impls.count(); ++i) {
             for (int j = 0; j < impls[i].length(); ++j) {
-                if (impls[i][j] != 0) {
+                if (impls[i][j] != '-') {
                     ports.insert(j);
                     if (ports.count() == impls[i].length()) {
                         return ports;

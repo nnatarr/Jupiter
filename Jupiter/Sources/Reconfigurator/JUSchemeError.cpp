@@ -22,3 +22,8 @@ bool JUSchemeError::isValid()
 {
     return false;
 }
+
+QString JUSchemeError::description()
+{
+    return "";
+}
