@@ -10,6 +10,7 @@
 #include <QMap>
 #include <QList>
 #include <QPixmap>
+#include <QPainter>
 
 class JUReconfLUT
 {
@@ -26,6 +27,7 @@ private:
     int m_elemPortsCount;
     int m_elemsCount;
     int m_reservedElemsCount;
+    int m_lutElemHeight;
     QList<JUSchemeErrorLUT> m_errors;
     QList<JUProtoLUT> m_freeElems;
     QList<JUProtoLUT> m_savedElems;
@@ -33,6 +35,10 @@ private:
     QList<JUReconfigFunctDisjunct> m_disjuncts;
     QString m_vhdl;
     QPixmap m_pixmap;
+
+    QMap<QString, QColor> m_inputColors;
+    QMap<QString, QRect> m_lutRects;
+    QMap<QString, QRect> m_inputRects;
 
     void uniteDisjuncts(bool incrementRank = false);
     int* kuhnAlgorithm();
@@ -45,6 +51,11 @@ private:
 
     QString vhdlDescriptionInner(QList<JUProtoLUT> *luts);
     QPixmap pixmapDescriptionInner(QList<JUProtoLUT> *luts);
+
+    void drawInput(int x, int y, QString name, QPainter *p);
+    void drawLUT(int x, int y, JUProtoLUT l, QPainter *p);
+
+    QList<int> sortListInt(QList<int> list, int low, int high);
 };
 
 #endif

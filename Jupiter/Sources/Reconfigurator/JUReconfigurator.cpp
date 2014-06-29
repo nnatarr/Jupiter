@@ -116,23 +116,24 @@ QList<QList<JUSchemeError *>> JUReconfigurator::generateErrors()
     QList<QList<JUSchemeError *>> errors;
 
     if (m_schemeType == JUEntity::EntityTypeLUT) {
+        int p = pow(2, m_elemPortCount);
         for (int i = 0; i <= m_maxErrorCount; ++i) {
             for (int j = 0; j <= m_maxErrorCount - i; ++j) {
                 for (int k = 0; k <= m_maxErrorCount - (i + j); ++k) {
                     QList<JUSchemeError *> error;
                     for (int l = 0; l < i; ++l) {
                         JUSchemeErrorLUT *e = new JUSchemeErrorLUT;
-                        e->initError(JUSchemeErrorLUT::LUTSchemeErrorTypePort, 0);
+                        e->initError(JUSchemeErrorLUT::LUTSchemeErrorTypePort, rand() % m_elemPortCount);
                         error.append(e);
                     }
                     for (int l = 0; l < j; ++l) {
                         JUSchemeErrorLUT *e = new JUSchemeErrorLUT;
-                        e->initError(JUSchemeErrorLUT::LUTSchemeErrorTypeTransistor, 0);
+                        e->initError(JUSchemeErrorLUT::LUTSchemeErrorTypeTransistor, rand() % p);
                         error.append(e);
                     }
                     for (int l = 0; l < k; ++l) {
                         JUSchemeErrorLUT *e = new JUSchemeErrorLUT;
-                        e->initError(JUSchemeErrorLUT::LUTSchemeErrorTypeMultiplexer, 0);
+                        e->initError(JUSchemeErrorLUT::LUTSchemeErrorTypeMultiplexer, rand() % m_elemPortCount);
                         error.append(e);
                     }
                     if (error.isEmpty()) {

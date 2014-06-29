@@ -20,6 +20,8 @@ public:
     int portsCount() { return m_portsCount; }
     int availablePortsCount() { return m_portsAvailable.count(); }
 
+    QList<int> availablePorts() { return m_portsAvailable.values(); }
+
     int getFirstAvailablePort();
     void connectPortToSignal(int port, QString signalName);
 
@@ -28,8 +30,10 @@ public:
     QString outputName() { return m_outputName; }
     QString name() { return m_name; }
 
+    QMap<int, int> signalPortMap() const { return m_signalPortMap; }
     QMap<int, int> portSignalMap() const { return m_portSignalMap; }
     QMap<int, QString> portNamedSignalMap() const { return m_portNamedSignalMap; }
+    QMap<QString, int> namedSignalPortMap() const { return m_namedSignalPortMap; }
     QSet<int> brokenPorts() const { return m_brokenPorts; }
     QMap<QString, QString> lut() const { return m_lut; }
 
@@ -45,8 +49,10 @@ private:
     bool m_isSaved;
     QString m_name;
     QString m_outputName;
+    QMap<int, int> m_signalPortMap;
     QMap<int, int> m_portSignalMap;
     QMap<int, QString> m_portNamedSignalMap;
+    QMap<QString, int> m_namedSignalPortMap;
     QMap<QString, QString> m_lut;
 
     void processError();

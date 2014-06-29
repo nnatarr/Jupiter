@@ -5,6 +5,20 @@
  
 #include <QStringBuilder>
 
+#define LUT_ELEM_WIDTH 50
+#define LUT_ELEM_MARGIN 5
+#define DISTANCE_BETWEEN_LEVELS_X 100
+#define DISTANCE_BETWEEN_LUTS_Y 100
+#define DISTANCE_BETWEEN_LUT_PORTS 25
+#define DISTANCE_MIN_BETWEEN_INPUTS 30
+#define PIXMAP_MARGIN 10
+#define INPUT_ELEM_WIDTH 30
+#define INPUT_ELEM_HEIGHT 20
+#define CROSS_WIDTH 8
+#define CROSS_HEIGHT 8
+#define DISTANCE_BETWEEN_LINES 10
+#define CIRCLE_RADIUS 3
+
 #define __JUMODULE__ "ReconfLUT"
 
 JUReconfLUT::JUReconfLUT(QList<QString> cmnLut, QList<JUSchemeErrorLUT> errors, int elemsCount, int reservedElemsCount, int elemPortsCount)
@@ -15,7 +29,9 @@ JUReconfLUT::JUReconfLUT(QList<QString> cmnLut, QList<JUSchemeErrorLUT> errors, 
     m_reservedElemsCount = reservedElemsCount;
     m_elemPortsCount = elemPortsCount;
 
-    for (int i = 0; i < m_elemsCount; ++i) {
+    m_lutElemHeight = 25 * (m_elemPortsCount - 1) + 2 * LUT_ELEM_MARGIN;
+
+    for (int i = 0; i < m_elemsCount + reservedElemsCount; ++i) {
         JUAssert((i >= m_errors.count()) || (i < m_errors.count() && m_errors[i].type() != JUSchemeErrorLUT::LUTSchemeErrorTypeNone), "errors array can not contain empty errors");
         m_freeElems.append(JUProtoLUT("lut" % QString::number(i), m_elemPortsCount, (i < m_errors.count() ? m_errors[i] : JUSchemeErrorLUT()), QString("y%1").arg(i)));
     }
@@ -146,12 +162,16 @@ bool JUReconfLUT::configure()
             full.removeFirst();
             finished.append(f);
         }
-        if (e.availablePortsCount() == 0) {
-            full.append(e);
-            empty.removeFirst();
-        } else {
+        if (e.availablePortsCount() > 0) {
             empty.removeFirst();
             empty.insert(0, e);
+        } else {
+            empty.removeFirst();
+            if (full.count() > 0) {
+                full.append(e);
+            } else {
+                finished.append(e);
+            }
         }
 
         int ec = empty.count();
@@ -197,7 +217,6 @@ bool JUReconfLUT::configure()
 
     m_vhdl = vhdlDescriptionInner(&finished);
     m_pixmap = pixmapDescriptionInner(&finished);
-    //JUMLog("%s", Q(m_vhdl));
 
     return true;
 }
@@ -325,7 +344,7 @@ int JUReconfLUT::maxLUTAvailPorts()
 
 QList<JUProtoLUT> JUReconfLUT::sort(QList<JUProtoLUT> list, int low, int high)
 {
-    if (high - low < 2) {
+    if (high - low + 1 < 2) {
         return list;
     }
 
@@ -416,7 +435,6 @@ QString JUReconfLUT::vhdlDescriptionInner(QList<JUProtoLUT> *luts)
                 int idx = map[l.portNamedSignalMap()[j]];
                 vhdl = vhdl % "s" % QString::number(idx);
             } else {
-                //JUAssert(false, "wtf?");
                 vhdl = vhdl % "0";
             }
         }
@@ -433,5 +451,365 @@ QString JUReconfLUT::vhdlDescriptionInner(QList<JUProtoLUT> *luts)
 
 QPixmap JUReconfLUT::pixmapDescriptionInner(QList<JUProtoLUT> *luts)
 {
-    return QPixmap();
+    QMap<int, QList<JUProtoLUT>> levels;
+    QList<JUProtoLUT> copy;
+    copy.append(*luts);
+
+    int maxElemCount = 0;
+
+    int level = 0;
+    int used = 0;
+    QSet<QString> currentLevelInputs;
+    QSet<QString> nextLevelInputs;
+    levels[0] = QList<JUProtoLUT>();
+    while (copy.count() > 0) {
+        QList<int> toremove;
+        for (int i = 0; i < copy.count(); ++i) {
+            JUProtoLUT l = copy[i];
+            if (l.isAvailable()) {
+                toremove.append(i);
+                continue;
+            }
+            if (level == 0) {
+                if (l.portNamedSignalMap().count() == 0) {
+                    levels[0].append(l);
+                    nextLevelInputs.insert(l.outputName());
+                    toremove.append(i);
+                }
+            } else {
+                QSet<QString> s = QSet<QString>::fromList(l.portNamedSignalMap().values());
+                if (s.subtract(currentLevelInputs).count() == 0) {
+                    if (!levels.contains(level)) {
+                        levels[level] = QList<JUProtoLUT>();
+                    }
+                    levels[level].append(l);
+                    nextLevelInputs.insert(l.outputName());
+                    toremove.append(i);
+                }
+            }
+        }
+        for (int i = toremove.count() - 1; i > -1; --i) {
+            copy.removeAt(i);
+        }
+        if (levels[level].count() > maxElemCount) {
+            maxElemCount = levels[level].count();
+        }
+        level++;
+        currentLevelInputs.unite(nextLevelInputs);
+        nextLevelInputs.clear();
+    }
+
+    level++;
+    int inputsCount = m_cmnLut[0].length() + 1;
+    int pixmapWidth = level * LUT_ELEM_WIDTH + (level - 1) * DISTANCE_BETWEEN_LEVELS_X + 2 * PIXMAP_MARGIN;
+    int pixmapHeight = 2 * PIXMAP_MARGIN + qMax(maxElemCount * m_lutElemHeight + (maxElemCount - 1) * DISTANCE_BETWEEN_LUTS_Y, inputsCount * INPUT_ELEM_HEIGHT + (inputsCount - 1) * DISTANCE_MIN_BETWEEN_INPUTS);
+    QPixmap pixmap(pixmapWidth, pixmapHeight);
+    QPainter p(&pixmap);
+    p.fillRect(0, 0, pixmapWidth, pixmapHeight, Qt::white);
+
+    int distanceBetweenInputs = (pixmapHeight - 2 * PIXMAP_MARGIN - inputsCount * INPUT_ELEM_HEIGHT) / (inputsCount - 1);
+
+    QList<QString> inputs;
+    int x = PIXMAP_MARGIN;
+    int y = PIXMAP_MARGIN;
+    for (int i = 0; i < inputsCount - 1; ++i) {
+        QString name = "x" % QString::number(i);
+        drawInput(x, y, name, &p);
+        inputs.append(name);
+        y += INPUT_ELEM_HEIGHT + distanceBetweenInputs;
+    }
+    drawInput(x, y, "0", &p);
+    inputs.append("0");
+
+    x = PIXMAP_MARGIN + m_inputRects["x0"].width() + DISTANCE_BETWEEN_LEVELS_X;
+    for (int i = 0; i < level - 1; ++i) {
+        QList<JUProtoLUT> ll = levels[i];
+        int count = ll.count();
+
+        int height = count * m_lutElemHeight + (count - 1) * DISTANCE_BETWEEN_LUTS_Y;
+        int y = PIXMAP_MARGIN + (pixmapHeight - 2 * PIXMAP_MARGIN - height) / 2;
+        
+        for (int j = 0; j < count; ++j) {
+            JUProtoLUT l = ll[j];
+            drawLUT(x, y, l, &p);
+            y += m_lutElemHeight + DISTANCE_BETWEEN_LUTS_Y;
+        }
+
+        x += LUT_ELEM_WIDTH + DISTANCE_BETWEEN_LEVELS_X;
+    }
+
+    for (int i = 0; i < inputs.count(); ++i) {
+        QString input = inputs[i];
+
+        p.save();
+        QRect inputRect = m_inputRects[input];
+        p.setPen(m_inputColors[input]);
+        p.setBrush(m_inputColors[input]);
+        int yStart = inputRect.y() + inputRect.height() / 2;
+
+        int offsetForLineX = DISTANCE_BETWEEN_LINES * (i + 1);
+
+        int skippedLevels = 0;
+
+        for (int j = 0; j < level - 1; ++j) {
+            QList<int> portsY;
+            QList<JUProtoLUT> luts = levels[j];
+            for (int k = 0; k < luts.count(); ++k) {
+                JUProtoLUT l = luts[k];
+                if (l.signalPortMap().contains(i)) {
+                    QRect r = m_lutRects[l.name()];
+                    portsY.append(r.y() + LUT_ELEM_MARGIN + l.signalPortMap()[i] * DISTANCE_BETWEEN_LUT_PORTS);
+                } else if (input == "0") {
+                    QList<int> broken = l.brokenPorts().values();
+                    for (int m = 0; m < broken.count(); ++m) {
+                        QRect r = m_lutRects[l.name()];
+                        portsY.append(r.y() + LUT_ELEM_MARGIN + broken[m] * DISTANCE_BETWEEN_LUT_PORTS);
+                    }
+                    QList<int> unused = l.availablePorts();
+                    for (int m = 0; m < unused.count(); ++m) {
+                        QRect r = m_lutRects[l.name()];
+                        portsY.append(r.y() + LUT_ELEM_MARGIN + unused[m] * DISTANCE_BETWEEN_LUT_PORTS);
+                    }
+                }
+            }
+
+            if (portsY.count() == 0) {
+                skippedLevels++;
+                continue;
+            }
+
+            if (j > 0) {
+                for (int m = skippedLevels; m > 0; --m) {
+                    int lvl = j - m;
+                    QList<JUProtoLUT> luts = levels[lvl];
+                    int x = PIXMAP_MARGIN + inputRect.width() + lvl * DISTANCE_BETWEEN_LEVELS_X + lvl * LUT_ELEM_WIDTH;
+                    int lineX = x + offsetForLineX;
+                    QRect block(-1, -1, -1, -1);
+                    for (int mm = 0; mm < luts.count(); ++mm) {
+                        QRect r = m_lutRects[luts[mm].name()];
+                        if (r.top() <= yStart && r.top() + r.height() >= yStart) {
+                            block = r;
+                            break;
+                        }
+                    }
+                    if (lvl == 0) {
+                        p.drawLine(x, yStart, lineX, yStart);
+                    }
+                    if (block.width() > -1) {
+                        int up = yStart - block.top();
+                        int down = block.bottom() - yStart;
+                        int offset = DISTANCE_BETWEEN_LUTS_Y * 1.0 / (10 * inputsCount) * (i + 1);
+                        if (up < down) {
+                            p.drawLine(lineX, yStart, lineX, block.top() - offset);
+                            p.drawLine(lineX, block.top() - offset, lineX + DISTANCE_BETWEEN_LEVELS_X + LUT_ELEM_WIDTH, block.top() - offset);
+                            yStart = block.top() - offset;
+                        } else if (up > down) {
+                            p.drawLine(lineX, yStart, lineX, block.bottom() + offset);
+                            p.drawLine(lineX, block.bottom() + offset, lineX + DISTANCE_BETWEEN_LEVELS_X + LUT_ELEM_WIDTH, block.bottom() + offset);
+                            yStart = block.bottom() + offset;
+                        }
+                    } else {
+                        p.drawLine(lineX, yStart, lineX + DISTANCE_BETWEEN_LEVELS_X + LUT_ELEM_WIDTH, yStart);
+                    }
+                }
+
+                int lvl = j - 1;
+                int x = PIXMAP_MARGIN + inputRect.width() + lvl * DISTANCE_BETWEEN_LEVELS_X + lvl * LUT_ELEM_WIDTH;
+                int lineX = x + offsetForLineX;
+                QList<JUProtoLUT> luts = levels[lvl];
+                QRect block(-1, -1, -1, -1);
+                for (int mm = 0; mm < luts.count(); ++mm) {
+                    QRect r = m_lutRects[luts[mm].name()];
+                    if (r.top() <= yStart && r.top() + r.height() >= yStart) {
+                        block = r;
+                        break;
+                    }
+                }
+                if (block.width() > -1) {
+                    int up = yStart - block.top();
+                    int down = block.bottom() - yStart;
+                    int offset = DISTANCE_BETWEEN_LUTS_Y * 1.0 / (10 * inputsCount) * (i + 1);
+                    if (up < down) {
+                        p.drawLine(lineX, yStart, lineX, block.top() - offset);
+                        p.drawLine(lineX, block.top() - offset, lineX + DISTANCE_BETWEEN_LEVELS_X + LUT_ELEM_WIDTH, block.top() - offset);
+                        yStart = block.top() - offset;
+                    } else if (up > down) {
+                        p.drawLine(lineX, yStart, lineX, block.bottom() + offset);
+                        p.drawLine(lineX, block.bottom() + offset, lineX + DISTANCE_BETWEEN_LEVELS_X + LUT_ELEM_WIDTH, block.bottom() + offset);
+                        yStart = block.bottom() + offset;
+                    }
+                } else {
+                    p.drawLine(lineX, yStart, lineX + DISTANCE_BETWEEN_LEVELS_X + LUT_ELEM_WIDTH, yStart);
+                }
+            }
+
+            portsY = sortListInt(portsY, 0, portsY.count() - 1);
+
+            int x = PIXMAP_MARGIN + inputRect.width() + j * DISTANCE_BETWEEN_LEVELS_X + j * LUT_ELEM_WIDTH;
+            int lineX = x + offsetForLineX;
+            int portX = x + DISTANCE_BETWEEN_LEVELS_X;
+            p.drawLine(lineX, portsY[0], lineX, portsY.last());
+            for (int k = 0; k < portsY.count(); ++k) {
+                p.drawLine(lineX, portsY[k], portX, portsY[k]);
+                if (k > 0 && k < portsY.count() - 1) {
+                    p.drawEllipse(QPoint(lineX, portsY[k]), CIRCLE_RADIUS, CIRCLE_RADIUS);
+                }
+            }
+            p.drawLine(x, yStart, lineX, yStart);
+            if (portsY.count() > 1 && yStart >= portsY[0] && yStart <= portsY.last()) {
+                p.drawEllipse(QPoint(lineX, yStart), CIRCLE_RADIUS, CIRCLE_RADIUS);
+            }
+            if (yStart < portsY.first()) {
+                p.drawLine(lineX, yStart, lineX, portsY.first());
+                if (portsY.count() > 1) {
+                    p.drawEllipse(QPoint(lineX, portsY.first()), CIRCLE_RADIUS, CIRCLE_RADIUS);
+                }
+            }
+            if (yStart > portsY.last()) {
+                p.drawLine(lineX, yStart, lineX, portsY.last());
+                if (portsY.count() > 1) {
+                    p.drawEllipse(QPoint(lineX, portsY.last()), CIRCLE_RADIUS, CIRCLE_RADIUS);
+                }
+            }
+
+            skippedLevels = 0;
+        }
+
+        p.restore();
+    }
+
+    p.save();
+    for (int i = 0; i < level - 2; ++i) {
+        QList<JUProtoLUT> luts = levels[i];
+        for (int j = 0; j < luts.count(); ++j) {
+            p.setPen(QColor(qrand() % 256, qrand() % 256, qrand() % 256));
+
+            JUProtoLUT l = luts[j];
+            QRect r = m_lutRects[l.name()];
+            int x = r.right() + 5 + qrand() % 25;
+            int y = r.y() + r.height() / 2;
+            p.drawLine(r.right() + 1, y, x, y);
+
+            QString output = l.outputName();
+            for (int k = i + 1; k < level - 1; ++k) {
+                QList<JUProtoLUT> kluts = levels[k];
+                int targetPort = -1;
+                QRect targetRect(-1, -1, -1, -1);
+                for (int m = 0; m < kluts.count(); ++m) {
+                    JUProtoLUT l2 = kluts[m];
+                    if (l2.namedSignalPortMap().contains(output)) {
+                        targetPort = l2.namedSignalPortMap()[output];
+                        targetRect = m_lutRects[l2.name()];
+                        break;
+                    }
+                }
+
+                if (targetPort > -1) {
+                    int portY = targetRect.y() + LUT_ELEM_MARGIN + targetPort * DISTANCE_BETWEEN_LUT_PORTS;
+                    p.drawLine(x, y, x, portY);
+                    p.drawLine(x, portY, targetRect.x(), portY);
+                    break;
+                } else {
+                    QRect block(-1, -1, -1, -1);
+                    for (int mm = 0; mm < kluts.count(); ++mm) {
+                        QRect r = m_lutRects[kluts[mm].name()];
+                        if (r.top() <= y && r.top() + r.height() >= y) {
+                            block = r;
+                            break;
+                        }
+                    }
+                    if (block.width() > -1) {
+                        int up = y - block.top();
+                        int down = block.bottom() - y;
+                        int offset = DISTANCE_BETWEEN_LUTS_Y * 1.0 / (10 * inputsCount) * (5 + qrand() % 25);
+                        if (up < down) {
+                            p.drawLine(x, y, x, block.top() - offset);
+                            p.drawLine(x, block.top() - offset, x + DISTANCE_BETWEEN_LEVELS_X + LUT_ELEM_WIDTH, block.top() - offset);
+                            y = block.top() - offset;
+                        } else if (up > down) {
+                            p.drawLine(x, y, x, block.bottom() + offset);
+                            p.drawLine(x, block.bottom() + offset,  + DISTANCE_BETWEEN_LEVELS_X + LUT_ELEM_WIDTH, block.bottom() + offset);
+                            y = block.bottom() + offset;
+                        }
+                    } else {
+                        p.drawLine(x, y, x + DISTANCE_BETWEEN_LEVELS_X + LUT_ELEM_WIDTH, y);
+                    }
+                }
+            }
+        }
+    }
+    p.restore();
+
+    p.end();
+    return pixmap;
+}
+
+void JUReconfLUT::drawInput(int x, int y, QString name, QPainter *p)
+{
+    p->save();
+    QColor color = QColor(qrand() % 256, qrand() % 256, qrand() % 256);
+    m_inputColors[name] = color;
+    p->setPen(color);
+    p->drawLine(x, y, x + INPUT_ELEM_WIDTH, y);
+    p->drawLine(x + INPUT_ELEM_WIDTH, y, x + INPUT_ELEM_WIDTH + INPUT_ELEM_HEIGHT / 2, y + INPUT_ELEM_HEIGHT / 2);
+    p->drawLine(x + INPUT_ELEM_WIDTH + INPUT_ELEM_HEIGHT / 2, y + INPUT_ELEM_HEIGHT / 2, x + INPUT_ELEM_WIDTH, y + INPUT_ELEM_HEIGHT);
+    p->drawLine(x + INPUT_ELEM_WIDTH, y + INPUT_ELEM_HEIGHT, x, y + INPUT_ELEM_HEIGHT);
+    p->drawLine(x, y + INPUT_ELEM_HEIGHT, x, y);
+    p->restore();
+
+    m_inputRects[name] = QRect(x, y, INPUT_ELEM_WIDTH + INPUT_ELEM_HEIGHT / 2, INPUT_ELEM_HEIGHT);
+
+    p->drawText(x, y, INPUT_ELEM_WIDTH, INPUT_ELEM_HEIGHT, Qt::AlignCenter, name);
+}
+
+void JUReconfLUT::drawLUT(int x, int y, JUProtoLUT l, QPainter *p)
+{
+    QRect r(x, y, LUT_ELEM_WIDTH, m_lutElemHeight);
+    p->drawRect(r);
+    p->drawText(r, Qt::AlignCenter, l.name());
+
+    m_lutRects[l.name()] = r;
+
+    QList<int> brokenPorts = l.brokenPorts().values();
+    for (int i = 0; i < brokenPorts.count(); ++i) {
+        int port = brokenPorts[i];
+        int offset = LUT_ELEM_MARGIN + port * DISTANCE_BETWEEN_LUT_PORTS;
+        int crossCenterY = y + offset;
+        p->save();
+        p->setPen(QPen(Qt::red, 2));
+        p->drawLine(x - CROSS_WIDTH / 2, crossCenterY - CROSS_HEIGHT / 2, x + CROSS_WIDTH / 2, crossCenterY + CROSS_HEIGHT / 2);
+        p->drawLine(x - CROSS_WIDTH / 2, crossCenterY + CROSS_HEIGHT / 2, x + CROSS_WIDTH / 2, crossCenterY - CROSS_HEIGHT / 2);
+        p->restore();
+    }
+}
+
+QList<int> JUReconfLUT::sortListInt(QList<int> list, int low, int high)
+{
+    if (high - low + 1 < 2) {
+        return list;
+    }
+
+    int index = low + (high - low)/2;
+    int p = list[index];
+    int l = low;
+    int r = high;
+
+    while (l <= r) {
+        if (list[l] < p) {
+            l++;
+            continue;
+        }
+        if (list[r] > p) {
+            r--;
+            continue;
+        }
+        int t = list[l];
+        list[l++] = list[r];
+        list[r--] = t;
+    }
+
+    list = sortListInt(list, low, index - 1);
+    sortListInt(list, index + 1, high);
+
+    return list;
 }

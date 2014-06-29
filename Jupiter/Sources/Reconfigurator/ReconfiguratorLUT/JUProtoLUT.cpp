@@ -38,6 +38,7 @@ bool JUProtoLUT::setDisjunct(JUReconfigFunctDisjunct disjunct)
     for (int i = 0; i < dPortsIn.count(); ++i) {
         int port = lutAvailPorts.first();
         m_portSignalMap[port] = dPortsIn[i];
+        m_signalPortMap[dPortsIn[i]] = port;
         lutAvailPorts.removeFirst();
         m_portsAvailable.remove(port);
     }
@@ -83,6 +84,7 @@ void JUProtoLUT::connectPortToSignal(int port, QString signalName)
         m_portsAvailable.remove(port);
 
         m_portNamedSignalMap[port] = signalName;
+        m_namedSignalPortMap[signalName] = port;
 
         m_isSaved = true;
 

@@ -5,6 +5,7 @@
 #include <QDialog>
 #include <QTextEdit>
 #include <QPushButton>
+#include <QTabWidget>
 #include "JUSyntaxHighlighter.h"
 
 #include <QString>
@@ -22,6 +23,7 @@ private:
     QString m_vhdl;
     QPixmap m_pixmap;
 
+    QTabWidget *m_tabWidget;
     QTextEdit *m_vhdlWidget;
     JUSyntaxHighlighter *m_highlighter;
     QPushButton *m_okBtn;
