@@ -17,6 +17,18 @@ JUReconfigurator::JUReconfigurator(QList<JUEntity *> *entities, int maxErrorCoun
     m_maxErrorCount = maxErrorCount;
     m_reservedElementsCount = reservedElementsCount;
 
+    if (m_maxErrorCount > m_entities->count() + m_reservedElementsCount) {
+        m_maxErrorCount = m_entities->count() + m_reservedElementsCount;
+    }
+
+    m_elemPortCount = -1;
+    for (int i = 0; i < entities->count(); ++i) {
+        int cnt = (*entities)[i]->portsIn().count();
+        if (cnt > m_elemPortCount) {
+            m_elemPortCount = cnt;
+        }
+    }
+
     m_mainEntity = NULL;
     m_isValid = false;
     m_schemeType = JUEntity::EntityTypeNone;
@@ -27,7 +39,7 @@ JUReconfigurator::JUReconfigurator(QList<JUEntity *> *entities, int maxErrorCoun
         JUMLog("reconfigurations can not be done.");
     }
 
-    test();
+    //test();
 }
 
 JUReconfigurator::~JUReconfigurator()
@@ -98,6 +110,64 @@ bool JUReconfigurator::checkMainEntity()
 }
 
 // ========================================
+
+QList<QList<JUSchemeError *>> JUReconfigurator::generateErrors()
+{
+    QList<QList<JUSchemeError *>> errors;
+
+    if (m_schemeType == JUEntity::EntityTypeLUT) {
+        for (int i = 0; i <= m_maxErrorCount; ++i) {
+            for (int j = 0; j <= m_maxErrorCount - i; ++j) {
+                for (int k = 0; k <= m_maxErrorCount - (i + j); ++k) {
+                    QList<JUSchemeError *> error;
+                    for (int l = 0; l < i; ++l) {
+                        JUSchemeErrorLUT *e = new JUSchemeErrorLUT;
+                        e->initError(JUSchemeErrorLUT::LUTSchemeErrorTypePort, 0);
+                        error.append(e);
+                    }
+                    for (int l = 0; l < j; ++l) {
+                        JUSchemeErrorLUT *e = new JUSchemeErrorLUT;
+                        e->initError(JUSchemeErrorLUT::LUTSchemeErrorTypeTransistor, 0);
+                        error.append(e);
+                    }
+                    for (int l = 0; l < k; ++l) {
+                        JUSchemeErrorLUT *e = new JUSchemeErrorLUT;
+                        e->initError(JUSchemeErrorLUT::LUTSchemeErrorTypeMultiplexer, 0);
+                        error.append(e);
+                    }
+                    if (error.isEmpty()) {
+                        continue;
+                    }
+                    errors.append(error);
+                }
+            }
+        }
+    }
+
+    return errors;
+}
+
+JUReconfigurator::ConfigurationResult JUReconfigurator::reconfigureForErrors(QList<JUSchemeError *> error)
+{
+    JUReconfigurator::ConfigurationResult result;
+    result.isValid = false;
+
+    if (m_schemeType == JUEntity::EntityTypeLUT) {
+        QList<JUSchemeErrorLUT> errors;
+        for (int i = 0; i < error.count(); ++i) {
+            errors.append(*static_cast<JUSchemeErrorLUT *>(error[i]));
+        }
+        JUReconfLUT r(m_mainEntity->commonLUT(), errors, m_mainEntity->singnalsMap().count(), m_reservedElementsCount, m_elemPortCount);
+        bool success = r.configure();
+        if (success) {
+            result.isValid = true;
+            result.vhdl = r.vhdlDescription();
+            result.pixmap = r.pixmapDescription();
+        }
+    }
+
+    return result;
+}
 
 void JUReconfigurator::test()
 {

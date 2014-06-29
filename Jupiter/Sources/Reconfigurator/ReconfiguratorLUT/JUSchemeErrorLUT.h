@@ -16,6 +16,7 @@ public:
     LUTSchemeErrorType type() { return m_errorType; }
 
     virtual bool isValid();
+    virtual QString description();
 
 protected:
     void setType();

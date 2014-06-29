@@ -1,6 +1,8 @@
 
 #include "JUSchemeErrorLUT.h"
 
+#include <QStringBuilder>
+
 JUSchemeErrorLUT::JUSchemeErrorLUT() : JUSchemeError()
 {
     m_errorType = LUTSchemeErrorTypeNone;
@@ -29,4 +31,24 @@ bool JUSchemeErrorLUT::initError(JUSchemeErrorLUT::LUTSchemeErrorType errorType,
 bool JUSchemeErrorLUT::isValid()
 {
     return m_errorType != LUTSchemeErrorTypeNone && m_innerElementIndex > -1;
+}
+
+QString JUSchemeErrorLUT::description()
+{
+    QString desc;
+    switch (m_errorType) {
+    case LUTSchemeErrorTypePort:
+        desc = "Port (" % QString::number(m_innerElementIndex) % ")";
+        break;
+    case LUTSchemeErrorTypeTransistor:
+        desc = "Transistor (" % QString::number(m_innerElementIndex) % ")";
+        break;
+    case LUTSchemeErrorTypeMultiplexer:
+        desc = "Multiplexer(" % QString::number(m_innerElementIndex) % ")";
+        break;
+    case LUTSchemeErrorTypeNone:
+    default:
+        desc = "None";
+    }
+    return desc;
 }

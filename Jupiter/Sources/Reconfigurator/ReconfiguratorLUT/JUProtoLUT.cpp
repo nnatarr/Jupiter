@@ -86,6 +86,16 @@ void JUProtoLUT::connectPortToSignal(int port, QString signalName)
 
         m_isSaved = true;
 
+        if (m_lut.count() == 0) {
+            m_lut = generateEmptyLUT(m_portsCount);
+            for (int i = 0; i < m_lut.count(); ++i) {
+                QString key = m_lut.keys()[i];
+                if (key.contains('1')) {
+                    m_lut[key] = "1";
+                }
+            }
+        }
+
         for (int i = 0; i < m_lut.count(); ++i) {
             QString key = m_lut.keys()[i];
             if (key[port] == '1') {
@@ -111,7 +121,7 @@ void JUProtoLUT::processError()
         }
         break;
     case JUSchemeErrorLUT::LUTSchemeErrorTypeTransistor:
-        portIndex = (int)(qLn(m_error.innerElementIndex()) / qLn(2.0));
+        portIndex = (int)(qLn(m_error.innerElementIndex() + 1) / qLn(2.0));
         for (int i = 0; i < m_portsCount; ++i) {
             if (i == portIndex) {
                 m_brokenPorts.insert(i);

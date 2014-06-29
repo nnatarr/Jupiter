@@ -9,6 +9,7 @@
 #include <QString>
 #include <QMap>
 #include <QList>
+#include <QPixmap>
 
 class JUReconfLUT
 {
@@ -19,6 +20,7 @@ public:
     bool configure();
 
     QString vhdlDescription() { return m_vhdl; }
+    QPixmap pixmapDescription() { return m_pixmap; }
 
 private:
     int m_elemPortsCount;
@@ -30,6 +32,7 @@ private:
     QList<QString> m_cmnLut;
     QList<JUReconfigFunctDisjunct> m_disjuncts;
     QString m_vhdl;
+    QPixmap m_pixmap;
 
     void uniteDisjuncts(bool incrementRank = false);
     int* kuhnAlgorithm();
@@ -41,6 +44,7 @@ private:
     QList<JUProtoLUT> sort(QList<JUProtoLUT> list, int low, int high);
 
     QString vhdlDescriptionInner(QList<JUProtoLUT> *luts);
+    QPixmap pixmapDescriptionInner(QList<JUProtoLUT> *luts);
 };
 
 #endif

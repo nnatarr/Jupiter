@@ -149,6 +149,9 @@ bool JUReconfLUT::configure()
         if (e.availablePortsCount() == 0) {
             full.append(e);
             empty.removeFirst();
+        } else {
+            empty.removeFirst();
+            empty.insert(0, e);
         }
 
         int ec = empty.count();
@@ -193,6 +196,7 @@ bool JUReconfLUT::configure()
     }
 
     m_vhdl = vhdlDescriptionInner(&finished);
+    m_pixmap = pixmapDescriptionInner(&finished);
     //JUMLog("%s", Q(m_vhdl));
 
     return true;
@@ -412,7 +416,8 @@ QString JUReconfLUT::vhdlDescriptionInner(QList<JUProtoLUT> *luts)
                 int idx = map[l.portNamedSignalMap()[j]];
                 vhdl = vhdl % "s" % QString::number(idx);
             } else {
-                JUAssert(false, "wtf?");
+                //JUAssert(false, "wtf?");
+                vhdl = vhdl % "0";
             }
         }
         if (i < luts->count() - 1) {
@@ -424,4 +429,9 @@ QString JUReconfLUT::vhdlDescriptionInner(QList<JUProtoLUT> *luts)
     vhdl = vhdl % "end architecture main_entity_arch;";
 
     return vhdl;
+}
+
+QPixmap JUReconfLUT::pixmapDescriptionInner(QList<JUProtoLUT> *luts)
+{
+    return QPixmap();
 }
