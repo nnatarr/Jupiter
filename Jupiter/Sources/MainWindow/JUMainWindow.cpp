@@ -9,6 +9,7 @@
 #include <QTextStream>
 #include <QStringBuilder>
 #include <QLabel>
+#include <QMessageBox>
 
 #include "JUConfigViewer.h"
 
@@ -27,10 +28,13 @@ JUMainWindow::JUMainWindow(QWidget *parent) : QMainWindow(parent)
     m_vhdl = new QTextEdit(this);
     m_vhdl->setReadOnly(true);
     m_loadFileBtn = new QPushButton("Load...", this);
-    m_analizeBtn = new QPushButton("Analize", this);
+    m_analizeBtn = new QPushButton("Analyse", this);
     m_processBtn = new QPushButton("Generate", this);
     m_analizeBtn->setEnabled(false);
     m_processBtn->setEnabled(false);
+
+    m_doAllBtn = new QPushButton("Process all errors", this);
+    m_doAllBtn->setEnabled(false);
 
     m_errorSpinBox = new QSpinBox(this);
     m_errorSpinBox->setMinimum(1);
@@ -47,6 +51,7 @@ JUMainWindow::JUMainWindow(QWidget *parent) : QMainWindow(parent)
     connect(m_loadFileBtn, SIGNAL(clicked()), this, SLOT(loadFileSlot()));
     connect(m_analizeBtn, SIGNAL(clicked()), this, SLOT(analizeSlot()));
     connect(m_processBtn, SIGNAL(clicked()), this, SLOT(processSlot()));
+    connect(m_doAllBtn, SIGNAL(clicked()), this, SLOT(doAll()));
 
     connect(m_vhdl, SIGNAL(textChanged()), this, SLOT(vhdlTextChanged()));
 
@@ -79,7 +84,14 @@ JUMainWindow::JUMainWindow(QWidget *parent) : QMainWindow(parent)
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(descLayout, 2);
+
+    QHBoxLayout *l = new QHBoxLayout;
+    l->setContentsMargins(0, 0, 0, 0);
+    l->addStretch();
+    l->addWidget(m_doAllBtn);
+
     mainLayout->addWidget(m_errorsWidget, 1);
+    mainLayout->addLayout(l);
 
     cw->setLayout(mainLayout);
     setCentralWidget(cw);
@@ -125,6 +137,7 @@ void JUMainWindow::loadFileSlot()
         m_processBtn->setEnabled(false);
         m_errorSpinBox->setEnabled(false);
         m_reservedSpinBox->setEnabled(false);
+        m_doAllBtn->setEnabled(false);
     }
 }
 
@@ -140,6 +153,7 @@ void JUMainWindow::analizeSlot()
     m_processBtn->setEnabled(false);
     m_errorSpinBox->setEnabled(false);
     m_reservedSpinBox->setEnabled(false);
+    m_doAllBtn->setEnabled(false);
 
     if (m_entities.count() > 0) {
         for (int i = 0; i < m_entities.count(); ++i) {
@@ -150,7 +164,17 @@ void JUMainWindow::analizeSlot()
 
     JUParserVHDL *parser = new JUParserVHDL();
     m_entities = parser->parse(m_filepath);
+
+    QString errorMsg = "";
+    if (parser->isErrorSet()) {
+        errorMsg = parser->errorMsg();
+    }
+
     delete parser;
+
+    if (errorMsg.length() > 0) {
+        showErrorMsg("Parsing failed", errorMsg);
+    }
 
     if (m_reconfigurator) {
         delete m_reconfigurator;
@@ -164,6 +188,7 @@ void JUMainWindow::analizeSlot()
     m_processBtn->setEnabled(m_reconfigurator->isValid());
     m_errorSpinBox->setEnabled(m_reconfigurator->isValid());
     m_reservedSpinBox->setEnabled(m_reconfigurator->isValid());
+    m_doAllBtn->setEnabled(m_reconfigurator->isValid());
 }
 
 void JUMainWindow::processSlot()
@@ -198,10 +223,53 @@ void JUMainWindow::itemActivatedSlot(QListWidgetItem *item)
 
     int index = m_errorsWidget->row(item);
     QList<JUSchemeError *> error = m_errors[index];
+    m_reconfigurator->setMaxErrorsCount(m_errorSpinBox->value());
+    m_reconfigurator->setReservedElementsCount(m_reservedSpinBox->value());
     JUReconfigurator::ConfigurationResult result = m_reconfigurator->reconfigureForErrors(error);
     if (result.isValid) {
         JUConfigViewer *cv = new JUConfigViewer(result.vhdl, result.pixmap, this);
         cv->show();
+    } else {
+        showErrorMsg("Reconfiguration failed", m_reconfigurator->errorMsg());
+    }
+}
+
+void JUMainWindow::doAll()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, "Select directory for schemes storing");
+    if (!dir.isEmpty()) {
+        QFileInfo fi(dir);
+
+        if (!fi.isWritable()) {
+            showErrorMsg("Errors processing failed", QString("We don't have access to %1").arg(dir));
+            return;
+        }
+
+        int succeeded = 0;
+        for (int i = 0; i < m_errors.count(); ++i) {
+            JUReconfigurator::ConfigurationResult res = m_reconfigurator->reconfigureForErrors(m_errors[i]);
+            if (res.isValid) {
+                succeeded++;
+                QString dirName = dir % "/error_" % QString::number(i + 1);
+                if (QDir().mkdir(dirName)) {
+                    QFile descFile(dirName % "/description.txt");
+                    descFile.open(QIODevice::WriteOnly | QIODevice::Text);
+                    QTextStream s(&descFile);
+                    s << m_errorsWidget->item(i)->text();
+                    descFile.close();
+                    QFile vhdlFile(dirName % "/scheme.vhdl");
+                    vhdlFile.open(QIODevice::WriteOnly | QIODevice::Text);
+                    QTextStream t(&vhdlFile);
+                    t << res.vhdl;
+                    vhdlFile.close();
+                    res.pixmap.save(dirName % "/scheme.png");
+
+                } else {
+                    showErrorMsg("Scheme saving failed", QString("Can not create folder for error %1.").arg(i));
+                }
+            }
+            m_desc->setPlainText(QString("Completed %1/%2.\nSucceeded %3").arg(i + 1).arg(m_errors.count()).arg(succeeded));
+        }
     }
 }
 
@@ -215,4 +283,13 @@ void JUMainWindow::fillDesc()
 
     JUEntity *mainEntity = m_reconfigurator->mainEntity();
     m_desc->setPlainText(mainEntity->description());
+}
+
+void JUMainWindow::showErrorMsg(QString title, QString msg)
+{
+    QMessageBox *mbox = new QMessageBox(this);
+    mbox->setIcon(QMessageBox::Critical);
+    mbox->setWindowTitle(title);
+    mbox->setText(msg);
+    mbox->show();
 }

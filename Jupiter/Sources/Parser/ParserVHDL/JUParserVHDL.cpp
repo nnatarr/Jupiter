@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QStringBuilder>
+#include <QMessageBox>
 
 #define CHECK_ERROR { if (m_state == JUParserVHDL::ParserStateError) { return; } }
 
@@ -928,9 +929,22 @@ void JUParserVHDL::setErrorAtPosition(JUParserVHDL::ParserError error, FilePos p
         JUAssert(false, "not impl.");
     }
 
-    QString errorStr = QString("parse error: line %d, column %d => %1.").arg(description);
+    QString errorStr = QString("Parse error: line %d, column %d => %1.").arg(description);
+    m_errorMsg = m_errorMsg.sprintf(Q(errorStr), pos.line + 1, pos.column + 1);
     JUMLog(Q(errorStr), pos.line + 1, pos.column + 1);
 }
+
+bool JUParserVHDL::isErrorSet()
+{
+    return m_state == JUParserVHDL::ParserStateError;
+}
+
+QString JUParserVHDL::errorMsg()
+{
+    return m_errorMsg;
+}
+
+
 
 bool JUParserVHDL::isCharAcceptableInIdentifier(const QChar& c)
 {

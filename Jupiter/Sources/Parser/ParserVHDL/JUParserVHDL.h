@@ -11,6 +11,8 @@ public:
     virtual ~JUParserVHDL();
 
     virtual QList<JUEntity *> parse(const QString& filePath);
+    virtual bool isErrorSet();
+    virtual QString errorMsg();
 
 private:
     enum ParserState { ParserStateNone, ParserStateError, ParserStateComment, ParserStateCommentMultiLine, ParserStateEntity, ParserStateArchitecture };
@@ -23,8 +25,8 @@ private:
         int column;
     } m_currentPos;
     QString m_fileContent;
-    //JUEntity *m_ubsEntity;
-    //JUEntity *m_inverter;
+
+    QString m_errorMsg;
 
     QList<JUEntity *> m_entities;
 
@@ -58,6 +60,8 @@ private:
                        ParserError_IncorrectLUTDescription, ParserError_UnknownOutputPort };
     void setErrorAtPosition(ParserError error, FilePos pos, const QString& keyword = "");
     void setError(ParserError error, const QString& keyword = "");
+
+    void showErrorMsg(QString msg);
 };
 
 #endif

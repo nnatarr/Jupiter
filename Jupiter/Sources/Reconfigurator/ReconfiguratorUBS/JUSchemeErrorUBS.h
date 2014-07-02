@@ -13,7 +13,10 @@ public:
     enum UBSSchemeErrorType { UBSSchemeErrorTypeNone, UBSSchemeErrorTypePort, UBSSchemeErrorTypeTransistor, UBSSchemeErrorTypeBridging };
     bool initError(UBSSchemeErrorType errorType, int innerElementIndex);
 
+    UBSSchemeErrorType type() { return m_errorType; }
+
     virtual bool isValid();
+    virtual QString description();
 
 protected:
     void setType();

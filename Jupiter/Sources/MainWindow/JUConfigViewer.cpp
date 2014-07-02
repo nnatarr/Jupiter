@@ -10,7 +10,7 @@ JUConfigViewer::JUConfigViewer(QString vhdl, QPixmap pixmap, QWidget *parent) : 
     m_pixmap = pixmap;
 
     setModal(true);
-    setFixedSize(700, 500);
+    //setFixedSize(700, 500);
     setWindowTitle("Configuration Viewer");
 
     m_tabWidget = new QTabWidget(this);

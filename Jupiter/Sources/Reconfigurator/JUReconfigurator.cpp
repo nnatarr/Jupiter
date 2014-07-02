@@ -6,6 +6,7 @@
 
 #include "JUReconfigFunctDisjunct.h"
 #include "ReconfiguratorLUT/JUReconfLUT.h"
+#include "ReconfiguratorUBS/JUReconfUBS.h"
 
 #define __JUMODULE__ "Reconfigurator"
 
@@ -55,6 +56,7 @@ JUReconfigurator::~JUReconfigurator()
 bool JUReconfigurator::checkMainEntity()
 {
     if (m_entities->count() == 0) {
+        m_errorMsg = "No entities found.";
         JUMLog("no entities found.");
         return false;
     }
@@ -101,6 +103,7 @@ bool JUReconfigurator::checkMainEntity()
     }
 
     if (!m_mainEntity) {
+        m_errorMsg = "Cannot find main entity.";
         JUMLog("cannot find main entity.");
         return false;
     }
@@ -143,6 +146,33 @@ QList<QList<JUSchemeError *>> JUReconfigurator::generateErrors()
                 }
             }
         }
+    } else {
+        for (int i = 0; i <= m_maxErrorCount; ++i) {
+            for (int j = 0; j <= m_maxErrorCount - i; ++j) {
+                for (int k = 0; k <= m_maxErrorCount - (i + j); ++k) {
+                    QList<JUSchemeError *> error;
+                    for (int l = 0; l < i; ++l) {
+                        JUSchemeErrorUBS *e = new JUSchemeErrorUBS;
+                        e->initError(JUSchemeErrorUBS::UBSSchemeErrorTypePort, rand() % 2);
+                        error.append(e);
+                    }
+                    for (int l = 0; l < j; ++l) {
+                        JUSchemeErrorUBS *e = new JUSchemeErrorUBS;
+                        e->initError(JUSchemeErrorUBS::UBSSchemeErrorTypeTransistor, rand() % 4);
+                        error.append(e);
+                    }
+                    for (int l = 0; l < k; ++l) {
+                        JUSchemeErrorUBS *e = new JUSchemeErrorUBS;
+                        e->initError(JUSchemeErrorUBS::UBSSchemeErrorTypeBridging, rand() % 3);
+                        error.append(e);
+                    }
+                    if (error.isEmpty()) {
+                        continue;
+                    }
+                    errors.append(error);
+                }
+            }
+        }
     }
 
     return errors;
@@ -158,25 +188,30 @@ JUReconfigurator::ConfigurationResult JUReconfigurator::reconfigureForErrors(QLi
         for (int i = 0; i < error.count(); ++i) {
             errors.append(*static_cast<JUSchemeErrorLUT *>(error[i]));
         }
-        JUReconfLUT r(m_mainEntity->commonLUT(), errors, m_mainEntity->singnalsMap().count(), m_reservedElementsCount, m_elemPortCount);
+        JUReconfLUT r(m_mainEntity->commonLUT(), errors, (m_mainEntity->type() == JUEntity::EntityTypeLUT ? m_entities->count() : m_mainEntity->singnalsMap().count()), m_reservedElementsCount, m_elemPortCount);
         bool success = r.configure();
         if (success) {
             result.isValid = true;
             result.vhdl = r.vhdlDescription();
             result.pixmap = r.pixmapDescription();
+        } else {
+            m_errorMsg = r.errorMsg();
+        }
+    } else {
+        QList<JUSchemeErrorUBS> errors;
+        for (int i = 0; i < error.count(); ++i) {
+            errors.append(*static_cast<JUSchemeErrorUBS *>(error[i]));
+        }
+        JUReconfUBS r(m_mainEntity, errors, m_mainEntity->singnalsMap().count(), m_reservedElementsCount);
+        bool success = r.configure();
+        if (success) {
+            result.isValid = true;
+            result.vhdl = r.vhdl();
+            result.pixmap = r.pixmap();
+        } else {
+            m_errorMsg = r.errorMsg();
         }
     }
 
     return result;
-}
-
-void JUReconfigurator::test()
-{
-    QList<JUSchemeErrorLUT> errors;
-    JUSchemeErrorLUT error;
-    error.initError(JUSchemeErrorLUT::LUTSchemeErrorTypePort, 0);
-    errors << error;
-    JUReconfLUT r(m_mainEntity->commonLUT(), errors, m_mainEntity->singnalsMap().count(), 0, 4);
-    bool success = r.configure();
-    JUMLog("configuration succeeded: %d.", success);
 }

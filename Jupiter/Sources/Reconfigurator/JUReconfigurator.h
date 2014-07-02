@@ -35,6 +35,8 @@ public:
     void setMaxErrorsCount(int count) { m_maxErrorCount = count; }
     void setReservedElementsCount(int count) { m_reservedElementsCount = count; }
 
+    QString errorMsg() { return m_errorMsg; }
+
 private:
     QList<JUEntity *> *m_entities;
     JUEntity *m_mainEntity;
@@ -43,10 +45,9 @@ private:
     int m_maxErrorCount;
     int m_reservedElementsCount;
     int m_elemPortCount;
+    QString m_errorMsg;
 
     bool checkMainEntity();
-
-    void test();
 };
 
 #endif

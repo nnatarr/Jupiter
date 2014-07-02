@@ -23,7 +23,10 @@ public:
     QString vhdlDescription() { return m_vhdl; }
     QPixmap pixmapDescription() { return m_pixmap; }
 
+    QString errorMsg() { return m_errorMsg; }
+
 private:
+    QString m_errorMsg;
     int m_elemPortsCount;
     int m_elemsCount;
     int m_reservedElemsCount;
@@ -53,6 +56,7 @@ private:
     QPixmap pixmapDescriptionInner(QList<JUProtoLUT> *luts);
 
     void drawInput(int x, int y, QString name, QPainter *p);
+    void drawOutput(int x, int y, QPainter *p);
     void drawLUT(int x, int y, JUProtoLUT l, QPainter *p);
 
     QList<int> sortListInt(QList<int> list, int low, int high);

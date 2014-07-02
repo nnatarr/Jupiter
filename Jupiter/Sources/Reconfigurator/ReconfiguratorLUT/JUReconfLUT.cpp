@@ -73,6 +73,7 @@ bool JUReconfLUT::configure()
         }
 
         if (!exceeded && maxDisjunctRank() > maxLUTAvailPorts()) {
+            m_errorMsg = "max disjunct rang exceeds lut elem max available ports.";
             JUMLog("max disjunct rang exceeds lut elem max available ports.");
             JUAssert(false, "wtf");
             return false;
@@ -134,6 +135,7 @@ bool JUReconfLUT::configure()
     }
 
     if (m_disjuncts.count() > 0 && m_freeElems.count() == 0) {
+        m_errorMsg = "not enough LUT elements.";
         JUMLog("not enough LUT elements.");
         return false;
     }
@@ -167,14 +169,15 @@ bool JUReconfLUT::configure()
             empty.insert(0, e);
         } else {
             empty.removeFirst();
-            if (full.count() > 0) {
-                full.append(e);
-            } else {
-                finished.append(e);
-            }
+            full.append(e);
         }
 
-        int ec = empty.count();
+        int ec = 0;
+        for (int i = 0; i < empty.count(); ++i) {
+            if (!empty[i].isAvailable()) {
+                ec++;
+            }
+        }
         int fc = full.count();
 
         if (ec == 0 && fc == 0) {
@@ -187,7 +190,7 @@ bool JUReconfLUT::configure()
         }
 
         if (ec == 0 && fc > 1) {
-            JUMLog("have full, haven't empty.");
+            m_errorMsg = "not enough LUT elements.";
             return false;
         }
 
@@ -489,7 +492,7 @@ QPixmap JUReconfLUT::pixmapDescriptionInner(QList<JUProtoLUT> *luts)
             }
         }
         for (int i = toremove.count() - 1; i > -1; --i) {
-            copy.removeAt(i);
+            copy.removeAt(toremove[i]);
         }
         if (levels[level].count() > maxElemCount) {
             maxElemCount = levels[level].count();
@@ -501,7 +504,7 @@ QPixmap JUReconfLUT::pixmapDescriptionInner(QList<JUProtoLUT> *luts)
 
     level++;
     int inputsCount = m_cmnLut[0].length() + 1;
-    int pixmapWidth = level * LUT_ELEM_WIDTH + (level - 1) * DISTANCE_BETWEEN_LEVELS_X + 2 * PIXMAP_MARGIN;
+    int pixmapWidth = (level + 1) * LUT_ELEM_WIDTH + (level) * DISTANCE_BETWEEN_LEVELS_X + 2 * PIXMAP_MARGIN;
     int pixmapHeight = 2 * PIXMAP_MARGIN + qMax(maxElemCount * m_lutElemHeight + (maxElemCount - 1) * DISTANCE_BETWEEN_LUTS_Y, inputsCount * INPUT_ELEM_HEIGHT + (inputsCount - 1) * DISTANCE_MIN_BETWEEN_INPUTS);
     QPixmap pixmap(pixmapWidth, pixmapHeight);
     QPainter p(&pixmap);
@@ -740,6 +743,16 @@ QPixmap JUReconfLUT::pixmapDescriptionInner(QList<JUProtoLUT> *luts)
     }
     p.restore();
 
+    QRect lastElem = m_lutRects[levels.last()[0].name()];
+    x = (lastElem.right() + 1) + DISTANCE_BETWEEN_LEVELS_X;
+    y = lastElem.y() + (lastElem.height() + 1 - INPUT_ELEM_HEIGHT) / 2;
+    drawOutput(x, y, &p);
+
+    p.setPen(m_inputColors["output"]);
+    p.drawLine(lastElem.right() + 1, lastElem.y() + (lastElem.height() + 1) / 2, x, lastElem.y() + (lastElem.height() + 1) / 2);
+
+    p.restore();
+
     p.end();
     return pixmap;
 }
@@ -760,6 +773,23 @@ void JUReconfLUT::drawInput(int x, int y, QString name, QPainter *p)
     m_inputRects[name] = QRect(x, y, INPUT_ELEM_WIDTH + INPUT_ELEM_HEIGHT / 2, INPUT_ELEM_HEIGHT);
 
     p->drawText(x, y, INPUT_ELEM_WIDTH, INPUT_ELEM_HEIGHT, Qt::AlignCenter, name);
+}
+
+void JUReconfLUT::drawOutput(int x, int y, QPainter *p)
+{
+    int width = INPUT_ELEM_WIDTH + 15;
+
+    p->save();
+    m_inputColors["output"] = QColor(qrand() % 256, qrand() % 256, qrand() % 256);
+    p->setPen(m_inputColors["output"]);
+    p->drawLine(x, y + INPUT_ELEM_HEIGHT / 2, x + INPUT_ELEM_HEIGHT / 2, y);
+    p->drawLine(x + INPUT_ELEM_HEIGHT / 2, y, x + width, y);
+    p->drawLine(x + width, y, x + width, y + INPUT_ELEM_HEIGHT);
+    p->drawLine(x + width, y + INPUT_ELEM_HEIGHT, x + INPUT_ELEM_HEIGHT / 2, y + INPUT_ELEM_HEIGHT);
+    p->drawLine(x + INPUT_ELEM_HEIGHT / 2, y + INPUT_ELEM_HEIGHT, x, y + INPUT_ELEM_HEIGHT / 2);
+    p->restore();
+
+    p->drawText(x, y, width + 3, INPUT_ELEM_HEIGHT - 3, Qt::AlignCenter, "output");
 }
 
 void JUReconfLUT::drawLUT(int x, int y, JUProtoLUT l, QPainter *p)

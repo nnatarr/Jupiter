@@ -29,6 +29,7 @@ private:
     QPushButton *m_analizeBtn;
     QPushButton *m_processBtn;
     QPushButton *m_loadFileBtn;
+    QPushButton *m_doAllBtn;
     QListWidget *m_errorsWidget;
     QSpinBox *m_errorSpinBox;
     QSpinBox *m_reservedSpinBox;
@@ -40,11 +41,13 @@ private:
     QList<QList<JUSchemeError *>> m_errors;
 
     void fillDesc();
+    void showErrorMsg(QString title, QString msg);
 
 protected slots:
     void loadFileSlot();
     void analizeSlot();
     void processSlot();
+    void doAll();
     void vhdlTextChanged();
     void itemActivatedSlot(QListWidgetItem *item);
 };
