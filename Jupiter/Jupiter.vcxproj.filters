@@ -1,0 +1,206 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Sources\MainWindow\JUConfigViewer.cpp">
+      <Filter>Sources\MainWindow</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\MainWindow\JUMainWindow.cpp">
+      <Filter>Sources\MainWindow</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\MainWindow\JUSyntaxHighlighter.cpp">
+      <Filter>Sources\MainWindow</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Parser\JUEntity.cpp">
+      <Filter>Sources\Parser</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Parser\ParserVHDL\JUParserVHDL.cpp">
+      <Filter>Sources\Parser\ParserVHDL</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Shared\Logger\JULogger.cpp">
+      <Filter>Sources\Shared\Logger</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Reconfigurator\JUSchemeError.cpp">
+      <Filter>Sources\Reconfigurator</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Reconfigurator\JUReconfigurator.cpp">
+      <Filter>Sources\Reconfigurator</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Reconfigurator\JUReconfigFunctDisjunct.cpp">
+      <Filter>Sources\Reconfigurator</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Reconfigurator\ReconfiguratorLUT\JUProtoLUT.cpp">
+      <Filter>Sources\Reconfigurator\ReconfiguratorLUT</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Reconfigurator\ReconfiguratorLUT\JUReconfLUT.cpp">
+      <Filter>Sources\Reconfigurator\ReconfiguratorLUT</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Reconfigurator\ReconfiguratorLUT\JUSchemeErrorLUT.cpp">
+      <Filter>Sources\Reconfigurator\ReconfiguratorLUT</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Reconfigurator\ReconfiguratorUBS\JUProtoUBS.cpp">
+      <Filter>Sources\Reconfigurator\ReconfiguratorUBS</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Reconfigurator\ReconfiguratorUBS\JUReconfUBS.cpp">
+      <Filter>Sources\Reconfigurator\ReconfiguratorUBS</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\Reconfigurator\ReconfiguratorUBS\JUSchemeErrorUBS.cpp">
+      <Filter>Sources\Reconfigurator\ReconfiguratorUBS</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\main.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\qrc_jupiter.cpp">
+      <Filter>GeneratedFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_JUConfigViewer.cpp">
+      <Filter>GeneratedFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_JUConfigViewer.cpp">
+      <Filter>GeneratedFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_JUMainWindow.cpp">
+      <Filter>GeneratedFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_JUMainWindow.cpp">
+      <Filter>GeneratedFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_JUSyntaxHighlighter.cpp">
+      <Filter>GeneratedFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_JUSyntaxHighlighter.cpp">
+      <Filter>GeneratedFiles</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Sources\Parser\JUParser.h">
+      <Filter>Sources\Parser</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Parser\JUEntity.h">
+      <Filter>Sources\Parser</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Parser\ParserVHDL\JUParserVHDL.h">
+      <Filter>Sources\Parser\ParserVHDL</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Shared\JUAssert.h">
+      <Filter>Sources\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Shared\Logger\JULogger.h">
+      <Filter>Sources\Shared\Logger</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Reconfigurator\JUSchemeError.h">
+      <Filter>Sources\Reconfigurator</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Reconfigurator\JUReconfigurator.h">
+      <Filter>Sources\Reconfigurator</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Reconfigurator\JUReconfigFunctDisjunct.h">
+      <Filter>Sources\Reconfigurator</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Reconfigurator\ReconfiguratorLUT\JUProtoLUT.h">
+      <Filter>Sources\Reconfigurator\ReconfiguratorLUT</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Reconfigurator\ReconfiguratorLUT\JUReconfLUT.h">
+      <Filter>Sources\Reconfigurator\ReconfiguratorLUT</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Reconfigurator\ReconfiguratorLUT\JUSchemeErrorLUT.h">
+      <Filter>Sources\Reconfigurator\ReconfiguratorLUT</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Reconfigurator\ReconfiguratorUBS\JUProtoUBS.h">
+      <Filter>Sources\Reconfigurator\ReconfiguratorUBS</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Reconfigurator\ReconfiguratorUBS\JUReconfUBS.h">
+      <Filter>Sources\Reconfigurator\ReconfiguratorUBS</Filter>
+    </ClInclude>
+    <ClInclude Include="Sources\Reconfigurator\ReconfiguratorUBS\JUSchemeErrorUBS.h">
+      <Filter>Sources\Reconfigurator\ReconfiguratorUBS</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Sources\MainWindow\JUConfigViewer.h">
+      <Filter>Sources\MainWindow</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Sources\MainWindow\JUMainWindow.h">
+      <Filter>Sources\MainWindow</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Sources\MainWindow\JUSyntaxHighlighter.h">
+      <Filter>Sources\MainWindow</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Resources\jupiter.qrc">
+      <Filter>Resources</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TestData\ex_two.vhdl">
+      <Filter>TestData</Filter>
+    </None>
+    <None Include="TestData\2band2_or2.vhdl">
+      <Filter>TestData</Filter>
+    </None>
+    <None Include="TestData\2band2_or2_2.vhdl">
+      <Filter>TestData</Filter>
+    </None>
+    <None Include="TestData\2band2_or2_3.vhdl">
+      <Filter>TestData</Filter>
+    </None>
+    <None Include="TestData\ex_one.vhdl">
+      <Filter>TestData</Filter>
+    </None>
+    <None Include="TestData\ex_three.vhdl">
+      <Filter>TestData</Filter>
+    </None>
+    <None Include="TestData\lut.vhdl">
+      <Filter>TestData</Filter>
+    </None>
+    <None Include="TestData\test.vhdl">
+      <Filter>TestData</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="TestData">
+      <UniqueIdentifier>{9c36247f-5651-4089-962d-9f5e75dd080a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{ac0de611-6b7c-4c4c-92a3-a6fab11ff9f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Parser">
+      <UniqueIdentifier>{4f3bc905-c3a9-4ee7-94d1-0d50579c652f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\MainWindow">
+      <UniqueIdentifier>{e9a237e8-35f0-4545-80d6-138d35f09682}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Parser\ParserVHDL">
+      <UniqueIdentifier>{a81e1ee5-2d7c-422f-bd0c-0f15c4156c40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Shared">
+      <UniqueIdentifier>{6d5978d8-2c22-42cf-8310-7f469abe4745}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Shared\Logger">
+      <UniqueIdentifier>{448afef8-bf08-46af-bf3d-84a19e0c321f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Reconfigurator">
+      <UniqueIdentifier>{a2ed32b9-9c6f-4fe8-b7f1-6e6322f0d09e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Reconfigurator\ReconfiguratorLUT">
+      <UniqueIdentifier>{dcf849a7-e95c-49ad-b357-e3582fef2b04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\Reconfigurator\ReconfiguratorUBS">
+      <UniqueIdentifier>{fe51100d-0431-4548-ad2b-bfba8ed982e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{333af647-d876-4782-ae80-837840ac5bf2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GeneratedFiles">
+      <UniqueIdentifier>{4e3c45c2-2dc5-4286-99d3-395ffdbaae3e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\Jupiter.ico">
+      <Filter>Resources</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources\Jupiter.rc">
+      <Filter>Resources</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

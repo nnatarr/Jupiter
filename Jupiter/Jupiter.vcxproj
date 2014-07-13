@@ -336,8 +336,6 @@
     <ResourceCompile Include="Resources\Jupiter.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram.cd" />
-    <None Include="ClassDiagram1.cd" />
     <None Include="TestData\2band2_or2.vhdl" />
     <None Include="TestData\2band2_or2_2.vhdl" />
     <None Include="TestData\2band2_or2_3.vhdl" />
